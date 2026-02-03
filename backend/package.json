@@ -1,0 +1,21 @@
+{
+  "name": "viberr-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.36.2",
+    "@vercel/kv": "^3.0.0",
+    "better-sqlite3": "^12.6.2",
+    "convex": "^1.21.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
