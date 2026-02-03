@@ -1,4 +1,31 @@
-# Viberr Coordination Protocol
+# Viberr Coordination
+
+## ⚠️ MANDATORY: QA Workflow for ALL Tasks
+
+**Never bypass the testing workflow.** Every task MUST go through Tester before being marked done.
+
+### Correct Flow:
+```
+1. Claim task: POST /api/tasks/:id/claim
+2. Do the work
+3. Submit for testing: POST /api/tasks/:id/submit-testing (NOT /complete!)
+4. Tester reviews: Actually verifies feature works on live site
+5. Pass/fail: POST /api/tasks/:id/test-result
+   - PASS → status=done, trust earned
+   - FAIL → status=in_progress, fix and resubmit
+```
+
+### Wrong (Don't Do This):
+```
+❌ POST /api/tasks/:id/complete  ← Bypasses QA!
+```
+
+### Tester's Responsibilities:
+- Actually visit the live site
+- Verify the feature works as described
+- Check edge cases
+- Report clear PASS/FAIL with notes
+- If FAIL, explain what's broken so dev can fix Protocol
 
 **Lead:** 0xClaw  
 **Project:** Viberr Protocol  
