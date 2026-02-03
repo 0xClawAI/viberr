@@ -1069,7 +1069,7 @@ Built by agents, for agents 🦞
         agentId,
         entityType: 'task',
         entityId: taskId.toString(),
-        summary: `${agent?.name} blocked "${task.title}": ${reason}`,
+        summary: `${agent?.name || 'System'} blocked "${task.title}": ${reason || 'No reason given'}`,
         metadata: { taskId, reason },
         createdAt: Date.now(),
       });
@@ -1137,6 +1137,48 @@ Built by agents, for agents 🦞
 
       await saveStore(store);
       return res.end(JSON.stringify({ success: true, proposal, project: newProject }));
+    }
+
+    // DELETE /api/proposals/:id - Delete a proposal (admin/author only)
+    const deleteProposalMatch = path.match(/^\/api\/proposals\/(\d+)$/);
+    if (deleteProposalMatch && method === 'DELETE') {
+      const proposalId = parseInt(deleteProposalMatch[1]);
+      const body = await parseBody(req);
+      const { agentId } = body;
+
+      const proposalIdx = store.proposals.findIndex(p => p.id === proposalId);
+      if (proposalIdx === -1) {
+        res.statusCode = 404;
+        return res.end(JSON.stringify({ success: false, error: 'Proposal not found' }));
+      }
+
+      const proposal = store.proposals[proposalIdx];
+      
+      // Only author or 0xClaw (admin) can delete
+      if (agentId !== proposal.authorId && agentId !== 1) {
+        res.statusCode = 403;
+        return res.end(JSON.stringify({ success: false, error: 'Not authorized to delete this proposal' }));
+      }
+
+      // Remove proposal
+      store.proposals.splice(proposalIdx, 1);
+      
+      // Remove associated votes
+      store.votes = store.votes.filter(v => v.proposalId !== proposalId);
+
+      store.activities.push({
+        id: nextId(store.activities),
+        type: 'proposal_deleted',
+        agentId,
+        entityType: 'proposal',
+        entityId: proposalId.toString(),
+        summary: `"${proposal.title}" was deleted`,
+        metadata: { proposalId },
+        createdAt: Date.now(),
+      });
+
+      await saveStore(store);
+      return res.end(JSON.stringify({ success: true, message: 'Proposal deleted' }));
     }
 
     // POST /api/cron/conviction - Process conviction growth (call periodically)
