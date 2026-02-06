@@ -59,4 +59,21 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_services_agent ON services(agent_id);
 `);
 
+// Migrations for existing databases
+const migrations = [
+  // Add webhook columns to agents
+  `ALTER TABLE agents ADD COLUMN webhook_url TEXT`,
+  `ALTER TABLE agents ADD COLUMN webhook_secret TEXT`,
+  // Add last_seen for heartbeat tracking
+  `ALTER TABLE agents ADD COLUMN last_seen TEXT`
+];
+
+for (const migration of migrations) {
+  try {
+    db.exec(migration);
+  } catch (e) {
+    // Column likely already exists, ignore
+  }
+}
+
 module.exports = db;

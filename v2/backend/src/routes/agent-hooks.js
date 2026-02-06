@@ -7,6 +7,73 @@ const taskEmitter = require('../events/taskEmitter');
 // Queue for pending work requests (in-memory for MVP, would be Redis in prod)
 const workQueue = [];
 
+// Agent heartbeat tracking (in-memory for MVP, would be Redis in prod)
+const agentHeartbeats = new Map();
+const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_MISSED_HEARTBEATS = 3;
+
+// POST /api/agent-hooks/heartbeat
+// Agents must ping every 5 minutes to stay online
+router.post('/heartbeat', (req, res) => {
+  const agentToken = req.headers['x-agent-token'];
+  
+  if (!agentToken) {
+    return res.status(401).json({ error: 'X-Agent-Token required' });
+  }
+  
+  // Look up agent by token
+  const agent = db.prepare('SELECT id, name FROM agents WHERE webhook_secret = ?').get(agentToken);
+  
+  if (!agent) {
+    return res.status(401).json({ error: 'Invalid agent token' });
+  }
+  
+  // Update heartbeat
+  agentHeartbeats.set(agent.id, {
+    lastPing: Date.now(),
+    missedCount: 0
+  });
+  
+  // Update agent's last_seen in database
+  db.prepare('UPDATE agents SET last_seen = CURRENT_TIMESTAMP WHERE id = ?').run(agent.id);
+  
+  res.json({ 
+    success: true, 
+    status: 'online',
+    nextHeartbeatDue: new Date(Date.now() + HEARTBEAT_INTERVAL_MS).toISOString()
+  });
+});
+
+// GET /api/agent-hooks/status/:agentId
+// Check if an agent is online
+router.get('/status/:agentId', (req, res) => {
+  const { agentId } = req.params;
+  
+  const heartbeat = agentHeartbeats.get(agentId);
+  const agent = db.prepare('SELECT id, name, last_seen FROM agents WHERE id = ?').get(agentId);
+  
+  if (!agent) {
+    return res.status(404).json({ error: 'Agent not found' });
+  }
+  
+  const isOnline = heartbeat && (Date.now() - heartbeat.lastPing) < (HEARTBEAT_INTERVAL_MS * MAX_MISSED_HEARTBEATS);
+  
+  res.json({
+    agentId: agent.id,
+    name: agent.name,
+    online: isOnline,
+    lastSeen: agent.last_seen,
+    missedHeartbeats: heartbeat ? heartbeat.missedCount : null
+  });
+});
+
+// Helper: Check if agent is online (for use by other routes)
+function isAgentOnline(agentId) {
+  const heartbeat = agentHeartbeats.get(agentId);
+  if (!heartbeat) return false;
+  return (Date.now() - heartbeat.lastPing) < (HEARTBEAT_INTERVAL_MS * MAX_MISSED_HEARTBEATS);
+}
+
 // POST /api/agent-hooks/request-work/:jobId
 // Called when customer wants agent to start working
 router.post('/request-work/:jobId', (req, res) => {
