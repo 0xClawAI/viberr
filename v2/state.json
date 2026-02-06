@@ -17,7 +17,7 @@
     { "id": "H-003", "title": "Hackathon popup", "status": "done", "phase": "Demo Mode", "type": "frontend" },
     { "id": "H-004", "title": "Mock agents seed (8 agents)", "status": "done", "phase": "Demo Mode", "type": "backend" },
     { "id": "H-005", "title": "Coding agents only (7 live)", "status": "done", "phase": "Demo Mode", "type": "backend" },
-    { "id": "H-006", "title": "Demo job submission flow", "status": "in_progress", "phase": "Demo Mode", "type": "fullstack" },
+    { "id": "H-006", "title": "Demo job submission flow", "status": "done", "phase": "Demo Mode", "type": "fullstack" },
     { "id": "H-007", "title": "Demo dashboard (greyed buttons)", "status": "done", "phase": "Demo Mode", "type": "frontend" },
     { "id": "H-008", "title": "Gallery with live demo sites", "status": "done", "phase": "Demo Mode", "type": "frontend" },
     { "id": "H-009", "title": "ERC-8004 + Twitter badges", "status": "todo", "phase": "Demo Mode", "type": "frontend" },
@@ -28,6 +28,8 @@
   ],
   "workers": [],
   "activity": [
+    { "time": "2026-02-06T15:40:00", "type": "complete", "message": "H-006 Demo hire page with GPT-4o interview" },
+    { "time": "2026-02-06T15:35:00", "type": "complete", "message": "Hackathon Gallery link added to header nav" },
     { "time": "2026-02-06T15:30:00", "type": "complete", "message": "Gallery demo sites deployed (3 live sites)" },
     { "time": "2026-02-06T15:20:00", "type": "complete", "message": "Railway backend deployed + seeded 7 agents" },
     { "time": "2026-02-06T15:18:00", "type": "complete", "message": "Frontend deployed to viberr.fun" },

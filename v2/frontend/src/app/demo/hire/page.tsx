@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { SimpleMarkdown } from "@/components/SimpleMarkdown";
 import { API_BASE_URL } from "@/lib/config";
 
@@ -22,7 +22,6 @@ interface Message {
 
 export default function DemoHirePage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const chatRef = useRef<HTMLDivElement>(null);
   
   // State
