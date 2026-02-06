@@ -2,6 +2,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 const db = require('../db');
+const taskEmitter = require('../events/taskEmitter');
 
 // Queue for pending work requests (in-memory for MVP, would be Redis in prod)
 const workQueue = [];
@@ -99,8 +100,9 @@ router.post('/claim/:workRequestId', (req, res) => {
   workRequest.claimedBy = workerId;
   workRequest.claimedAt = new Date().toISOString();
   
-  // Update job status — keep "revisions" status for revision work, use "in_progress" for initial builds
-  const newStatus = workRequest.type === 'revisions' ? 'revisions' : 'in_progress';
+  // Update job status — preserve status for revisions/hardening work, use "in_progress" for initial builds only
+  const statusMap = { revisions: 'revisions', hardening: 'hardening' };
+  const newStatus = statusMap[workRequest.type] || 'in_progress';
   db.prepare('UPDATE jobs SET status = ? WHERE id = ?').run(newStatus, workRequest.jobId);
   
   // Log activity
@@ -124,7 +126,21 @@ router.post('/claim/:workRequestId', (req, res) => {
 // Called by OpenClaw worker when initial build is done → transitions to "review" (Review 1)
 router.post('/complete/:jobId', (req, res) => {
   const { jobId } = req.params;
-  const { deliverables, summary } = req.body;
+  const { deliverables, summary, auditReport } = req.body;
+  
+  // ===== FT-002: Mandatory Auditor Enforcement =====
+  if (!auditReport || !auditReport.result || auditReport.result !== 'PASS') {
+    return res.status(400).json({
+      error: 'Audit report required. Must include auditReport with result: PASS',
+      required: {
+        auditReport: {
+          result: 'PASS',
+          summary: 'string describing what was checked',
+          checks: ['optional array of individual check results']
+        }
+      }
+    });
+  }
   
   // Check current status — only transition to "review" from "in_progress"
   // Don't blindly override if the job has already progressed past initial build
@@ -222,7 +238,21 @@ router.post('/queue-work', (req, res) => {
 // Called by OpenClaw worker when revisions are done → transitions to final_review
 router.post('/revisions-complete/:jobId', (req, res) => {
   const { jobId } = req.params;
-  const { deliverables, summary } = req.body;
+  const { deliverables, summary, auditReport } = req.body;
+  
+  // ===== FT-002: Mandatory Auditor Enforcement =====
+  if (!auditReport || !auditReport.result || auditReport.result !== 'PASS') {
+    return res.status(400).json({
+      error: 'Audit report required. Must include auditReport with result: PASS',
+      required: {
+        auditReport: {
+          result: 'PASS',
+          summary: 'string describing what was checked',
+          checks: ['optional array of individual check results']
+        }
+      }
+    });
+  }
   
   const job = db.prepare('SELECT * FROM jobs WHERE id = ?').get(jobId);
   if (!job) {
@@ -274,7 +304,21 @@ router.post('/revisions-complete/:jobId', (req, res) => {
 // Called by OpenClaw worker when hardening (security audit) is done → transitions to completed
 router.post('/hardening-complete/:jobId', (req, res) => {
   const { jobId } = req.params;
-  const { deliverables, securityReport, summary } = req.body;
+  const { deliverables, securityReport, summary, auditReport } = req.body;
+  
+  // ===== FT-002: Mandatory Auditor Enforcement =====
+  if (!auditReport || !auditReport.result || auditReport.result !== 'PASS') {
+    return res.status(400).json({
+      error: 'Audit report required. Must include auditReport with result: PASS',
+      required: {
+        auditReport: {
+          result: 'PASS',
+          summary: 'string describing what was checked',
+          checks: ['optional array of individual check results']
+        }
+      }
+    });
+  }
   
   const job = db.prepare('SELECT * FROM jobs WHERE id = ?').get(jobId);
   if (!job) {
@@ -329,6 +373,78 @@ router.post('/hardening-complete/:jobId', (req, res) => {
   console.log(`[Agent Hook] Hardening completed for job ${jobId} → completed`);
   
   res.json({ success: true, message: 'Hardening complete. Job delivered!' });
+});
+
+// POST /api/agent-hooks/task-update/:jobId
+// Called by OpenClaw workers to update task status in real-time
+// Body: { taskId, status, note }
+router.post('/task-update/:jobId', (req, res) => {
+  const { jobId } = req.params;
+  const { taskId, status, note } = req.body;
+  
+  if (!taskId || !status) {
+    return res.status(400).json({ error: 'taskId and status are required' });
+  }
+  
+  // Validate status
+  const validStatuses = ['pending', 'in_progress', 'completed'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Invalid status', validStatuses });
+  }
+  
+  try {
+    // Get job
+    const job = db.prepare('SELECT id FROM jobs WHERE id = ?').get(jobId);
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    
+    // Get task
+    const task = db.prepare('SELECT * FROM job_tasks WHERE id = ? AND job_id = ?').get(taskId, jobId);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    // Update task status
+    const now = new Date().toISOString();
+    db.prepare('UPDATE job_tasks SET status = ?, updated_at = ? WHERE id = ?').run(status, now, taskId);
+    
+    // Log activity
+    const activityDetails = note 
+      ? JSON.stringify({ taskTitle: task.title, status, note })
+      : JSON.stringify({ taskTitle: task.title, status });
+    
+    db.prepare(`
+      INSERT INTO job_activity (id, job_id, actor_wallet, action, details)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      `activity-${Date.now()}`,
+      jobId,
+      'agent',
+      'task_updated',
+      activityDetails
+    );
+    
+    // Broadcast via SSE
+    taskEmitter.emitTaskUpdate(jobId, {
+      taskId,
+      status,
+      title: task.title,
+      note
+    });
+    
+    console.log(`[Agent Hook] Task update: job=${jobId}, task=${taskId}, status=${status}`);
+    
+    res.json({ 
+      success: true, 
+      taskId,
+      status,
+      timestamp: now
+    });
+  } catch (err) {
+    console.error(`[Agent Hook] Task update error:`, err);
+    res.status(500).json({ error: 'Failed to update task', details: err.message });
+  }
 });
 
 module.exports = router;

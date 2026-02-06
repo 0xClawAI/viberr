@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const db = require('../db');
 const { walletAuth, optionalWalletAuth } = require('../middleware/auth');
+const taskEmitter = require('../events/taskEmitter');
 
 const router = express.Router();
 
@@ -470,6 +471,16 @@ router.put('/:id/tasks/:taskId', walletAuth, (req, res) => {
     }
 
     const updated = db.prepare('SELECT * FROM job_tasks WHERE id = ?').get(taskId);
+
+    // Broadcast task update via SSE if status changed
+    if (status) {
+      taskEmitter.emitTaskUpdate(id, {
+        taskId,
+        status,
+        title: updated.title,
+        note: null
+      });
+    }
 
     res.json({
       success: true,
@@ -1087,6 +1098,63 @@ router.post('/:id/undo-feedback', optionalWalletAuth, (req, res) => {
 
   console.log(`[Undo] Job ${id} reverted from revisions to ${previousStatus}`);
   res.json({ success: true, newStatus: previousStatus });
+});
+
+/**
+ * POST /api/jobs/:id/release - Release payment for completed job
+ * Sets a 'released' flag on the job to track payment release intent
+ */
+router.post('/:id/release', optionalWalletAuth, (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const job = db.prepare('SELECT * FROM jobs WHERE id = ?').get(id);
+    
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    // Only allow release for completed or hardening status
+    if (!['completed', 'hardening'].includes(job.status)) {
+      return res.status(400).json({ 
+        error: 'Payment can only be released for completed or hardening jobs',
+        currentStatus: job.status 
+      });
+    }
+
+    // Add 'released' column if it doesn't exist (migration)
+    try {
+      db.exec(`ALTER TABLE jobs ADD COLUMN released INTEGER DEFAULT 0`);
+    } catch (e) {
+      // Column already exists
+    }
+
+    const now = new Date().toISOString();
+    
+    // Mark as released
+    db.prepare('UPDATE jobs SET released = 1, updated_at = ? WHERE id = ?').run(now, id);
+
+    // Log activity
+    const message = job.price_usdc === 0 
+      ? 'Free trial completed - no payment needed'
+      : 'Payment release requested';
+    
+    logActivity(id, req.walletAddress || 'client', 'payment_release', message);
+
+    console.log(`[Release] Job ${id} marked as released (price: ${job.price_usdc})`);
+
+    res.json({
+      success: true,
+      released: true,
+      jobId: id,
+      price: job.price_usdc,
+      message: job.price_usdc === 0 
+        ? 'Free trial completed!' 
+        : 'Payment release requested'
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to release payment', details: err.message });
+  }
 });
 
 module.exports = router;

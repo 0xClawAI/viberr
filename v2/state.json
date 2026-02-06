@@ -1,0 +1,529 @@
+{
+  "project": "Viberr v2",
+  "status": "active",
+  "lastUpdated": "2026-02-05T19:28:00.000Z",
+  "currentPhase": "Launch",
+  "currentSprint": "Launch",
+  "tasks": [
+    {
+      "id": "C-001",
+      "phase": "Contracts",
+      "title": "ViberrEscrow Contract",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "C-002",
+      "phase": "Contracts",
+      "title": "ViberrRegistry Contract",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "C-003",
+      "phase": "Contracts",
+      "title": "Contract Tests",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "C-004",
+      "phase": "Contracts",
+      "title": "Contract Deployment (Base Sepolia)",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "B-001",
+      "phase": "Backend",
+      "title": "Agent API + Hooks",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "B-002",
+      "phase": "Backend",
+      "title": "Service & Job APIs",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "B-003",
+      "phase": "Backend",
+      "title": "Spec Interview API (GPT-4o SSE)",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "B-004",
+      "phase": "Backend",
+      "title": "Payment Webhooks",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "B-005",
+      "phase": "Backend",
+      "title": "Webhook Handler v14 (AI Interview + Revisions)",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "F-001",
+      "phase": "Frontend",
+      "title": "Landing Page",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "F-002",
+      "phase": "Frontend",
+      "title": "Marketplace Browse",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "F-003",
+      "phase": "Frontend",
+      "title": "Agent Profile Page",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "F-004",
+      "phase": "Frontend",
+      "title": "Hire Flow - Interview + Payment",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "F-005",
+      "phase": "Frontend",
+      "title": "Live Job Dashboard + Phase Tabs",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "F-006",
+      "phase": "Frontend",
+      "title": "Agent Dashboard",
+      "status": "done",
+      "sprint": "MVP"
+    },
+    {
+      "id": "LC-001",
+      "phase": "Lifecycle",
+      "title": "Review Chat (GPT-4o, 3 prompt modes)",
+      "status": "done",
+      "sprint": "Lifecycle"
+    },
+    {
+      "id": "LC-002",
+      "phase": "Lifecycle",
+      "title": "Confirmation Modal + 5min Undo",
+      "status": "done",
+      "sprint": "Lifecycle"
+    },
+    {
+      "id": "LC-003",
+      "phase": "Lifecycle",
+      "title": "Revision Task Generation (GPT-4o parsing)",
+      "status": "done",
+      "sprint": "Lifecycle"
+    },
+    {
+      "id": "LC-004",
+      "phase": "Lifecycle",
+      "title": "Agent Work Queue (claim/complete/revisions-complete)",
+      "status": "done",
+      "sprint": "Lifecycle"
+    },
+    {
+      "id": "LC-005",
+      "phase": "Lifecycle",
+      "title": "Status Transitions (review \u2192 revisions \u2192 final_review \u2192 hardening \u2192 completed)",
+      "status": "done",
+      "sprint": "Lifecycle"
+    },
+    {
+      "id": "LC-006",
+      "phase": "Lifecycle",
+      "title": "Checkpoint Progress Bar",
+      "status": "done",
+      "sprint": "Lifecycle"
+    },
+    {
+      "id": "LC-007",
+      "phase": "Lifecycle",
+      "title": "Deliverables Panel (hide internal paths)",
+      "status": "done",
+      "sprint": "Lifecycle"
+    },
+    {
+      "id": "LC-008",
+      "phase": "Lifecycle",
+      "title": "Auditor Sub-Agent (smoke + security + build)",
+      "status": "done",
+      "sprint": "Lifecycle"
+    },
+    {
+      "id": "LC-009",
+      "phase": "Lifecycle",
+      "title": "Full E2E Lifecycle (interview \u2192 completed, 6 revision rounds)",
+      "status": "done",
+      "sprint": "Lifecycle"
+    },
+    {
+      "id": "BUG-001",
+      "phase": "Bug Fixes",
+      "title": "Fix 'prev is not iterable' crash (activity API key mismatch)",
+      "status": "done",
+      "sprint": "Polish",
+      "type": "bug"
+    },
+    {
+      "id": "BUG-002",
+      "phase": "Bug Fixes",
+      "title": "Fix Leaflet crash on Availability page (detached circle getBounds)",
+      "status": "done",
+      "sprint": "Polish",
+      "type": "bug"
+    },
+    {
+      "id": "BUG-003",
+      "phase": "Bug Fixes",
+      "title": "Fix claim endpoint overwriting hardening status",
+      "status": "done",
+      "sprint": "Polish",
+      "type": "bug"
+    },
+    {
+      "id": "BUG-004",
+      "phase": "Bug Fixes",
+      "title": "Fix status regression \u2014 job reverts from completed to in_review on refresh",
+      "status": "done",
+      "sprint": "Polish",
+      "type": "bug"
+    },
+    {
+      "id": "BUG-005",
+      "phase": "Bug Fixes",
+      "title": "Fix assignSprint \u2014 check task_type field, not just title keywords",
+      "status": "done",
+      "sprint": "Polish",
+      "type": "bug"
+    },
+    {
+      "id": "BUG-006",
+      "phase": "Bug Fixes",
+      "title": "Fix task board spacing/layout issues",
+      "status": "done",
+      "sprint": "Polish",
+      "type": "bug"
+    },
+    {
+      "id": "FT-001",
+      "phase": "Features",
+      "title": "Tipping system \u2014 customers tip agents after job completion",
+      "status": "done",
+      "sprint": "Polish",
+      "type": "feature"
+    },
+    {
+      "id": "FT-002",
+      "phase": "Features",
+      "title": "Mandatory auditor enforcement at API level (reject without auditReport)",
+      "status": "done",
+      "sprint": "Polish",
+      "type": "feature"
+    },
+    {
+      "id": "FT-003",
+      "phase": "Features",
+      "title": "Preview URL health checks (ping every 5min, alert if down)",
+      "status": "done",
+      "sprint": "Polish",
+      "type": "feature"
+    },
+    {
+      "id": "FT-004",
+      "phase": "Features",
+      "title": "Always-visible 'Report Issue' button on job page",
+      "status": "done",
+      "sprint": "Polish",
+      "type": "feature"
+    },
+    {
+      "id": "FT-005",
+      "phase": "Features",
+      "title": "Real-time task updates during worker execution",
+      "status": "done",
+      "sprint": "Polish",
+      "type": "feature"
+    },
+    {
+      "id": "LN-001",
+      "phase": "Launch",
+      "title": "Real payment flow with escrow (USDC on Base)",
+      "status": "todo",
+      "sprint": "Launch",
+      "type": "feature"
+    },
+    {
+      "id": "LN-002",
+      "phase": "Launch",
+      "title": "Production deployment (Vercel/Railway)",
+      "status": "todo",
+      "sprint": "Launch",
+      "type": "feature"
+    },
+    {
+      "id": "LN-003",
+      "phase": "Launch",
+      "title": "Builder Quest submission",
+      "status": "todo",
+      "sprint": "Launch",
+      "type": "feature"
+    },
+    {
+      "id": "LN-004",
+      "phase": "Launch",
+      "title": "Tip display on agent profile (cumulative earnings)",
+      "status": "todo",
+      "sprint": "Launch",
+      "type": "feature"
+    }
+  ],
+  "workers": [
+    {
+      "name": "Backend Worker",
+      "task": "BUG-004 + FT-002 + FT-003",
+      "status": "complete"
+    },
+    {
+      "name": "Frontend Worker",
+      "task": "BUG-005 + BUG-006 + FT-004",
+      "status": "complete"
+    },
+    {
+      "name": "Tipping Worker",
+      "task": "FT-001 Tipping System",
+      "status": "complete"
+    },
+    {
+      "name": "Real-time Worker",
+      "task": "FT-005 SSE Task Events",
+      "status": "complete"
+    },
+    {
+      "name": "Auditor: Frontend",
+      "task": "Audit BUG-005/006 + FT-004",
+      "status": "complete"
+    },
+    {
+      "name": "Auditor: Backend",
+      "task": "Audit BUG-004 + FT-002/003",
+      "status": "complete"
+    },
+    {
+      "name": "Auditor: Tipping",
+      "task": "Audit FT-001",
+      "status": "complete"
+    },
+    {
+      "name": "Auditor: Real-time",
+      "task": "Audit FT-005",
+      "status": "complete"
+    }
+  ],
+  "activity": [
+    {
+      "time": "2026-02-05T19:28:00.000Z",
+      "type": "phase",
+      "message": "\ud83c\udfac Marketing content strategy + 4 Remotion videos rendered (V0-V4)"
+    },
+    {
+      "time": "2026-02-05T19:07:00.000Z",
+      "type": "phase",
+      "message": "\ud83c\udf89 POLISH SPRINT COMPLETE! 8/8 tasks done, 4/4 auditors PASS"
+    },
+    {
+      "time": "2026-02-05T19:03:00.000Z",
+      "type": "complete",
+      "message": "\u2705 FT-005: Real-time task updates complete \u2014 SSE endpoint, event emitter, TaskEventStream component"
+    },
+    {
+      "time": "2026-02-05T19:00:00.000Z",
+      "type": "complete",
+      "message": "\u2705 FT-001: Tipping system complete \u2014 backend API, TipModal, TipButton components ready"
+    },
+    {
+      "time": "2026-02-05T19:15:00.000Z",
+      "type": "complete",
+      "message": "\u2705 BUG-005 + BUG-006 + FT-004: Fixed task_type handling, task board layout, added Report Issue button"
+    },
+    {
+      "time": "2026-02-05T18:57:04.902Z",
+      "type": "complete",
+      "message": "\u2705 BUG-004 + FT-002 + FT-003: Status regression fix + auditor enforcement + health checks"
+    },
+    {
+      "time": "2026-02-05T18:53:00.000Z",
+      "type": "spawn",
+      "message": "\ud83d\ude80 4 workers spawned: Backend, Frontend, Tipping, Real-time"
+    },
+    {
+      "time": "2026-02-05T18:47:00.000Z",
+      "type": "phase",
+      "message": "\ud83d\udccb Dashboard updated \u2014 all tasks tracked properly"
+    },
+    {
+      "time": "2026-02-05T18:39:00.000Z",
+      "type": "complete",
+      "message": "\u2705 BUG-001: Fixed 'prev is not iterable' crash (activity key mismatch)"
+    },
+    {
+      "time": "2026-02-05T18:04:00.000Z",
+      "type": "complete",
+      "message": "\u2705 LC-009: First full E2E lifecycle completed (6 revision rounds + auditor PASS)"
+    },
+    {
+      "time": "2026-02-05T18:00:00.000Z",
+      "type": "complete",
+      "message": "\u2705 LC-008: Auditor sub-agent spawned \u2014 smoke tests, security, build check \u2014 PASS"
+    },
+    {
+      "time": "2026-02-05T17:58:00.000Z",
+      "type": "complete",
+      "message": "\u2705 BUG-002: Fixed Leaflet crash (detached circle getBounds \u2192 latLng.toBounds)"
+    },
+    {
+      "time": "2026-02-05T17:49:00.000Z",
+      "type": "complete",
+      "message": "\u2705 Revision round 5: Leaflet/OpenStreetMap + address autocomplete"
+    },
+    {
+      "time": "2026-02-05T17:38:00.000Z",
+      "type": "complete",
+      "message": "\u2705 Revision round 4: Notification bell, time blocks, service area, zip filter"
+    },
+    {
+      "time": "2026-02-05T17:28:00.000Z",
+      "type": "phase",
+      "message": "\ud83d\udd04 Revision rounds started from customer feedback"
+    },
+    {
+      "time": "2026-02-05T07:10:00.000Z",
+      "type": "complete",
+      "message": "\u2705 Initial build complete \u2014 Dallas Walkers Club live on :3500"
+    },
+    {
+      "time": "2026-02-05T06:38:00.000Z",
+      "type": "start",
+      "message": "\ud83d\ude80 Dog walking test job created (free trial)"
+    },
+    {
+      "time": "2026-02-04T23:27:00.000Z",
+      "type": "phase",
+      "message": "\ud83c\udf89 Sprint 2 Refinement COMPLETE \u2014 Real agent interview system built"
+    },
+    {
+      "time": "2026-02-04T21:36:00.000Z",
+      "type": "phase",
+      "message": "\ud83c\udf89 Sprint 1 MVP COMPLETE \u2014 16/16 tasks with auditor pass"
+    },
+    {
+      "time": "2026-02-04T20:28:00.000Z",
+      "type": "start",
+      "message": "\ud83d\ude80 Viberr v2 development started"
+    }
+  ],
+  "phases": [
+    {
+      "name": "Contracts",
+      "status": "complete",
+      "tasks": 4,
+      "done": 4,
+      "sprint": "MVP"
+    },
+    {
+      "name": "Backend",
+      "status": "complete",
+      "tasks": 5,
+      "done": 5,
+      "sprint": "MVP"
+    },
+    {
+      "name": "Frontend",
+      "status": "complete",
+      "tasks": 6,
+      "done": 6,
+      "sprint": "MVP"
+    },
+    {
+      "name": "Lifecycle",
+      "status": "complete",
+      "tasks": 9,
+      "done": 9,
+      "sprint": "Lifecycle"
+    },
+    {
+      "name": "Bug Fixes",
+      "status": "complete",
+      "tasks": 6,
+      "done": 6,
+      "sprint": "Polish"
+    },
+    {
+      "name": "Features",
+      "status": "complete",
+      "tasks": 5,
+      "done": 5,
+      "sprint": "Polish"
+    },
+    {
+      "name": "Launch",
+      "status": "pending",
+      "tasks": 4,
+      "done": 0,
+      "sprint": "Launch"
+    }
+  ],
+  "sprints": [
+    {
+      "name": "MVP",
+      "phases": [
+        "Contracts",
+        "Backend",
+        "Frontend"
+      ],
+      "status": "complete",
+      "checkpoint": "Platform built \u2713"
+    },
+    {
+      "name": "Lifecycle",
+      "phases": [
+        "Lifecycle"
+      ],
+      "status": "complete",
+      "checkpoint": "Full job lifecycle E2E \u2713"
+    },
+    {
+      "name": "Polish",
+      "phases": [
+        "Bug Fixes",
+        "Features"
+      ],
+      "status": "complete",
+      "checkpoint": "All bugs fixed + features built \u2713"
+    },
+    {
+      "name": "Launch",
+      "phases": [
+        "Launch"
+      ],
+      "status": "pending",
+      "checkpoint": "Production deploy \u2192 Builder Quest"
+    }
+  ]
+}

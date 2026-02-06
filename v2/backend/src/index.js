@@ -4,9 +4,12 @@ const cors = require('cors');
 const agentsRouter = require('./routes/agents');
 const servicesRouter = require('./routes/services');
 const jobsRouter = require('./routes/jobs');
+const taskEventsRouter = require('./routes/task-events');
+const tipsRouter = require('./routes/tips');
 const interviewRouter = require('./routes/interview');
 const webhooksRouter = require('./routes/webhooks');
 const agentHooksRouter = require('./routes/agent-hooks');
+const healthChecksRouter = require('./routes/health-checks');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -93,9 +96,13 @@ app.get('/api', (req, res) => {
 app.use('/api/agents', agentsRouter);
 app.use('/api/services', servicesRouter);
 app.use('/api/jobs', jobsRouter);
+app.use('/api/jobs', taskEventsRouter); // Task events SSE endpoint
+app.use('/api/jobs', tipsRouter); // Mount tips under /api/jobs for job tip endpoint
+app.use('/api/agents', tipsRouter); // Mount tips under /api/agents for agent stats/tips
 app.use('/api/interview', interviewRouter);
 app.use('/api/webhooks', webhooksRouter);
 app.use('/api/agent-hooks', agentHooksRouter);
+app.use('/api/health-checks', healthChecksRouter);
 
 // 404 handler
 app.use((req, res) => {

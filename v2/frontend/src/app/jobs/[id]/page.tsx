@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { SimpleMarkdown } from "@/components/SimpleMarkdown";
+import { TipButton } from "@/components/TipButton";
+import TaskEventStream from "@/components/TaskEventStream";
 
 // Types
 interface Task {
@@ -14,7 +16,8 @@ interface Task {
   status: "todo" | "in_progress" | "done";
   order: number;
   phase?: string; // sprint/phase grouping
-  taskType?: string; // "build" | "revision"
+  taskType?: string; // "build" | "revision" (camelCase from backend)
+  task_type?: string; // "build" | "revision" (snake_case from backend)
 }
 
 // Sprint definitions matching checkpoint phases
@@ -29,8 +32,8 @@ const SPRINTS = [
 // Auto-assign tasks to phases based on title keywords
 function assignSprint(task: Task, totalTasks: number): string {
   if (task.phase) return task.phase;
-  // All revision tasks go to Revisions phase
-  if (task.taskType === "revision") return "sprint_4";
+  // All revision tasks go to Revisions phase - check both snake_case and camelCase
+  if (task.task_type === 'revision' || task.taskType === 'revision') return "sprint_4";
   const title = task.title.toLowerCase();
   // Audit & Launch
   if (title.includes("deploy") || title.includes("live") || title.includes("launch") || title.includes("production") || title.includes("audit") || title.includes("security") || title.includes("pentest") || title.includes("penetration")) return "sprint_5";
@@ -196,27 +199,32 @@ const PROJECT_PHASES = [
 ];
 
 function getActivePhase(status: string, tasks: Task[]): string {
-  const doneTasks = tasks.filter(t => t.status === "done").length;
-  const totalTasks = tasks.length;
-  const inProgressTasks = tasks.filter(t => t.status === "in_progress").length;
-
+  // ===== FIX BUG-004: Always trust DB status over computed values =====
+  // Check ALL explicit statuses first, BEFORE doing any task-based computation
+  
+  // Terminal/explicit statuses — these should NEVER be overridden by task counts
   if (status === "completed") return "live";
-  if (status === "disputed") return "revisions";
-  // "review" = Review 1 (first build review)
-  // "final_review" = Final Review (after revisions)
-  // "hardening" = Bug audit / pen test phase
-  if (status === "review") return "review_1";
-  if (status === "final_review") return "final_review";
   if (status === "hardening") return "live"; // hardening is the step before live
+  if (status === "final_review") return "final_review";
   if (status === "revisions") return "revisions";
+  if (status === "review") return "review_1";
+  if (status === "disputed") return "revisions";
+  if (status === "funded" || status === "created") return "interview";
+  
+  // Only compute phase from tasks if status is ambiguous (in_progress)
   if (status === "in_progress") {
+    const doneTasks = tasks.filter(t => t.status === "done").length;
+    const totalTasks = tasks.length;
+    const inProgressTasks = tasks.filter(t => t.status === "in_progress").length;
+    
     if (totalTasks === 0) return "planning";
     if (doneTasks === 0 && inProgressTasks === 0) return "planning";
     if (doneTasks > 0 && doneTasks < totalTasks) return "building";
     if (doneTasks === totalTasks) return "review_1";
     return "building";
   }
-  if (status === "funded" || status === "created") return "interview";
+  
+  // Default fallback
   return "planning";
 }
 
@@ -346,9 +354,9 @@ function SpecSection({ spec, isExpanded, onToggle }: { spec: string; isExpanded:
       </button>
       {isExpanded && (
         <div className="px-6 pb-6 border-t border-white/10">
-          <pre className="whitespace-pre-wrap text-gray-300 text-sm leading-relaxed mt-4 font-mono">
-            {spec}
-          </pre>
+          <div className="mt-4">
+            <SimpleMarkdown content={spec} className="text-gray-300 text-sm leading-relaxed" />
+          </div>
         </div>
       )}
     </div>
@@ -358,10 +366,10 @@ function SpecSection({ spec, isExpanded, onToggle }: { spec: string; isExpanded:
 // Kanban Task Card
 function TaskCard({ task }: { task: Task }) {
   return (
-    <div className="bg-[#0a0a0a] border border-white/10 rounded-lg p-3 hover:border-emerald-500/30 transition cursor-pointer">
-      <p className="text-white text-sm font-medium">{task.title}</p>
+    <div className="bg-[#0a0a0a] border border-white/10 rounded-lg p-4 hover:border-emerald-500/30 transition cursor-pointer shadow-sm">
+      <p className="text-white text-sm font-medium leading-snug">{task.title}</p>
       {task.description && (
-        <p className="text-gray-500 text-xs mt-1 line-clamp-2">{task.description}</p>
+        <p className="text-gray-500 text-xs mt-2 line-clamp-2 leading-relaxed">{task.description}</p>
       )}
     </div>
   );
@@ -380,15 +388,17 @@ function KanbanColumn({
   accentColor: string;
 }) {
   return (
-    <div className="bg-[#111] border border-white/10 rounded-xl p-4 flex flex-col" style={{ minHeight: "200px", maxHeight: "500px" }}>
-      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
+    <div className="bg-[#111] border border-white/10 rounded-xl flex flex-col min-w-[280px]" style={{ minHeight: "200px", maxHeight: "500px" }}>
+      {/* Sticky header */}
+      <div className="sticky top-0 bg-[#111] rounded-t-xl flex items-center gap-3 p-5 pb-3 flex-shrink-0 border-b border-white/5 z-10">
         <span className="text-lg">{icon}</span>
         <h3 className="font-semibold text-white">{title}</h3>
-        <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${accentColor}`}>
+        <span className={`ml-auto text-xs px-2.5 py-1 rounded-full ${accentColor}`}>
           {tasks.length}
         </span>
       </div>
-      <div className="space-y-3 overflow-y-auto flex-1 pr-1" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
+      {/* Scrollable content */}
+      <div className="space-y-3 overflow-y-auto flex-1 p-5 pt-3" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.15) transparent" }}>
         {tasks.length > 0 ? (
           tasks.map((task) => <TaskCard key={task.id} task={task} />)
         ) : (
@@ -455,8 +465,8 @@ function KanbanBoard({ tasks }: { tasks: Task[] }) {
         })}
       </div>
 
-      {/* Kanban Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Kanban Columns - horizontal scroll on mobile, grid on desktop */}
+      <div className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto pb-2" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.15) transparent" }}>
         <KanbanColumn
           title="Todo"
           tasks={todoTasks}
@@ -560,6 +570,17 @@ function DeliverablesPanel({ deliverables, jobTitle, jobStatus = "review" }: { d
     };
   }).filter(Boolean) as { title: string; description: string; link?: string }[];
 
+  // Deduplicate by link URL — keep first occurrence, skip duplicates
+  const seen = new Set<string>();
+  const deduped = normalizedDeliverables.filter(d => {
+    if (d.link) {
+      if (seen.has(d.link)) return false;
+      seen.add(d.link);
+    }
+    return true;
+  });
+  const finalDeliverables = deduped;
+
   return (
     <div className="bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border border-emerald-500/30 rounded-2xl p-6 mb-6 animate-fade-in">
       {/* Header */}
@@ -583,9 +604,9 @@ function DeliverablesPanel({ deliverables, jobTitle, jobStatus = "review" }: { d
       </div>
 
       {/* Deliverables list */}
-      {normalizedDeliverables.length > 0 ? (
+      {finalDeliverables.length > 0 ? (
         <div className="space-y-3 mb-5">
-          {normalizedDeliverables.map((d, idx) => (
+          {finalDeliverables.map((d, idx) => (
             <div
               key={idx}
               className="bg-[#0a0a0a]/60 border border-white/10 rounded-xl p-4 hover:border-emerald-500/30 transition-all"
@@ -1056,20 +1077,25 @@ function ActionButtons({
   status,
   onApprove,
   onDispute,
-  onTip,
   onRequestWork,
   isLoading,
+  jobId,
+  agentId,
+  agentName,
+  onTipSuccess,
 }: {
   status: Job["status"];
   onApprove: () => void;
   onDispute: () => void;
-  onTip: () => void;
   onRequestWork?: () => void;
   isLoading: boolean;
+  jobId?: string;
+  agentId?: string;
+  agentName?: string;
+  onTipSuccess?: () => void;
 }) {
   const canRequestWork = status === "funded";
   const canDispute = ["funded", "in_progress", "review", "revisions", "final_review"].includes(status);
-  const canTip = status === "completed";
   // Approve & Release only shows at "live" stage (after hardening)
   const canApprove = status === "completed" || status === "hardening";
 
@@ -1082,7 +1108,7 @@ function ActionButtons({
     revisions: "Agent is implementing your requested changes.",
     final_review: "Review the final build. Approve when you're satisfied.",
     hardening: "Security audit and bug fixes in progress.",
-    completed: "Job completed! You can leave a tip to show appreciation.",
+    completed: "Job completed! All deliverables have been delivered.",
     disputed: "Dispute is being reviewed by mediators.",
   };
 
@@ -1118,6 +1144,15 @@ function ActionButtons({
           </button>
         )}
 
+        {/* Tip Button — shows after completion */}
+        <TipButton
+          jobId={jobId || ""}
+          agentId={agentId || ""}
+          agentName={agentName}
+          jobStatus={status}
+          onTipSuccess={onTipSuccess}
+        />
+
         {/* Dispute Button */}
         {canDispute && (
           <button
@@ -1134,25 +1169,6 @@ function ActionButtons({
               />
             </svg>
             Open Dispute
-          </button>
-        )}
-
-        {/* Tip Button — completed only */}
-        {canTip && (
-          <button
-            onClick={onTip}
-            disabled={isLoading}
-            className="w-full py-3 rounded-xl font-medium transition flex items-center justify-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            Send Tip
           </button>
         )}
       </div>
@@ -1178,6 +1194,9 @@ export default function JobDashboard() {
   const [actionLoading, setActionLoading] = useState(false);
   const [specExpanded, setSpecExpanded] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportDescription, setReportDescription] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   // Fetch job data
   const fetchJob = useCallback(async () => {
@@ -1215,7 +1234,8 @@ export default function JobDashboard() {
             description: (t.description || "") as string,
             status,
             order: ((t.orderIndex ?? t.order ?? 0) as number),
-            taskType: (t.taskType || "build") as string,
+            taskType: (t.taskType || t.task_type || "build") as string,
+            task_type: (t.task_type || t.taskType || "build") as string,
           };
         }),
         createdAt: raw.createdAt || new Date().toISOString(),
@@ -1238,7 +1258,7 @@ export default function JobDashboard() {
       const res = await fetch(`${API_BASE_URL}/api/jobs/${jobId}/activity`);
       if (!res.ok) throw new Error("API unavailable");
       const data = await res.json();
-      setActivity(data.activities || data);
+      setActivity(Array.isArray(data) ? data : (data.activity || data.activities || []));
     } catch {
       // Use mock data
       setActivity(MOCK_ACTIVITY);
@@ -1280,34 +1300,59 @@ export default function JobDashboard() {
 
   // Action handlers
   const handleApprove = async () => {
-    if (!job || job.status !== "review") return;
+    if (!job || (job.status !== "completed" && job.status !== "hardening")) return;
     setActionLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/jobs/${jobId}/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "completed" }),
-      });
-
-      if (!res.ok) throw new Error("API unavailable");
-
-      // Update local state
-      setJob((prev) => (prev ? { ...prev, status: "completed" } : null));
-      setActivity((prev) => [
-        {
-          id: `a-${Date.now()}`,
-          type: "payment",
-          message: "Payment released to agent",
-          timestamp: new Date().toISOString(),
-          actor: "You",
-        },
-        ...prev,
-      ]);
-    } catch {
-      // Mock update
-      setJob((prev) => (prev ? { ...prev, status: "completed" } : null));
-      alert("Payment approved! (Mock mode)");
+      // Check if it's a free trial ($0 job)
+      if (job.price === 0) {
+        // Show success message for free trial
+        alert("No payment needed — this was a free trial! 🎉");
+        
+        // Mark as released in the backend
+        await fetch(`${API_BASE_URL}/api/jobs/${jobId}/release`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        
+        setActivity((prev) => [
+          {
+            id: `a-${Date.now()}`,
+            type: "payment",
+            message: "Free trial completed — no payment needed",
+            timestamp: new Date().toISOString(),
+            actor: "You",
+          },
+          ...prev,
+        ]);
+      } else {
+        // Paid job - show placeholder toast
+        alert("Payment release coming soon");
+        
+        // Still call the backend to mark intent
+        await fetch(`${API_BASE_URL}/api/jobs/${jobId}/release`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        
+        setActivity((prev) => [
+          {
+            id: `a-${Date.now()}`,
+            type: "payment",
+            message: "Payment release requested",
+            timestamp: new Date().toISOString(),
+            actor: "You",
+          },
+          ...prev,
+        ]);
+      }
+    } catch (error) {
+      console.error("Failed to release payment:", error);
+      if (job.price === 0) {
+        alert("No payment needed — this was a free trial! 🎉 (Offline mode)");
+      } else {
+        alert("Payment release coming soon (Offline mode)");
+      }
     } finally {
       setActionLoading(false);
     }
@@ -1350,6 +1395,50 @@ export default function JobDashboard() {
     if (!job || job.status !== "completed") return;
     // In production, would open a tip modal
     alert("Tip feature coming soon!");
+  };
+
+  const handleReportIssue = async () => {
+    if (!reportDescription.trim()) {
+      alert("Please describe the issue before submitting.");
+      return;
+    }
+
+    setReportSubmitting(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/jobs/${jobId}/report-issue`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: reportDescription.trim(),
+          type: "customer_report",
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to submit report");
+
+      // Success - show toast and close modal
+      alert("Issue reported! The agent will investigate.");
+      setReportModalOpen(false);
+      setReportDescription("");
+
+      // Add to activity feed
+      setActivity((prev) => [
+        {
+          id: `a-${Date.now()}`,
+          type: "message",
+          message: "Issue reported by client",
+          timestamp: new Date().toISOString(),
+          actor: "You",
+        },
+        ...prev,
+      ]);
+    } catch (error) {
+      console.error("Failed to report issue:", error);
+      alert("Failed to submit report. Please try again.");
+    } finally {
+      setReportSubmitting(false);
+    }
   };
 
   const handleRequestWork = async () => {
@@ -1413,6 +1502,16 @@ export default function JobDashboard() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
+      {/* Real-time task event stream */}
+      {job && (
+        <TaskEventStream
+          jobId={job.id}
+          jobStatus={job.status}
+          onTaskUpdate={() => fetchJob()}
+          onJobUpdate={() => { fetchJob(); fetchActivity(); }}
+        />
+      )}
+
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1458,7 +1557,7 @@ export default function JobDashboard() {
                   <h1 className="text-2xl md:text-3xl font-bold text-white">{job.title}</h1>
                   <StatusBadge status={job.status} />
                 </div>
-                <p className="text-gray-400 mb-4">{job.description}</p>
+                <div className="text-gray-400 mb-4 line-clamp-4"><SimpleMarkdown content={job.description} /></div>
 
                 {/* Agent info */}
                 <div className="flex items-center gap-3">
@@ -1657,12 +1756,81 @@ export default function JobDashboard() {
                 status={job.status}
                 onApprove={handleApprove}
                 onDispute={handleDispute}
-                onTip={handleTip}
                 onRequestWork={handleRequestWork}
                 isLoading={actionLoading}
+                jobId={job.id}
+                agentId={job.agent?.id}
+                agentName={job.agent?.name}
+                onTipSuccess={() => fetchActivity()}
               />
             </div>
           </div>
+
+          {/* Floating Report Issue Button */}
+          <button
+            onClick={() => setReportModalOpen(true)}
+            className="fixed bottom-8 right-8 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 z-40 backdrop-blur-sm"
+            title="Report Issue"
+          >
+            <span className="text-2xl">🐛</span>
+          </button>
+
+          {/* Report Issue Modal */}
+          {reportModalOpen && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-[#111] border border-white/10 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <span>🐛</span>
+                    Report Issue
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setReportModalOpen(false);
+                      setReportDescription("");
+                    }}
+                    className="text-gray-400 hover:text-white transition"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <p className="text-gray-400 text-sm mb-4">
+                  Found a bug or something not working as expected? Let us know and the agent will investigate.
+                </p>
+
+                <textarea
+                  value={reportDescription}
+                  onChange={(e) => setReportDescription(e.target.value)}
+                  placeholder="Describe the issue in detail..."
+                  className="w-full bg-[#0a0a0a] border border-white/10 rounded-lg p-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 min-h-[120px] resize-vertical"
+                  disabled={reportSubmitting}
+                />
+
+                <div className="mt-4 flex gap-3">
+                  <button
+                    onClick={() => {
+                      setReportModalOpen(false);
+                      setReportDescription("");
+                    }}
+                    className="flex-1 py-3 rounded-xl font-medium transition bg-white/5 hover:bg-white/10 text-gray-300"
+                    disabled={reportSubmitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleReportIssue}
+                    disabled={reportSubmitting || !reportDescription.trim()}
+                    className="flex-1 py-3 rounded-xl font-medium transition bg-red-500 hover:bg-red-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {reportSubmitting ? "Submitting..." : "Submit Report"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
