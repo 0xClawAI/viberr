@@ -12,6 +12,7 @@ const interviewRouter = require('./routes/interview');
 const webhooksRouter = require('./routes/webhooks');
 const agentHooksRouter = require('./routes/agent-hooks');
 const healthChecksRouter = require('./routes/health-checks');
+const demoRouter = require('./routes/demo');
 
 const app = express();
 const x402Routes = require("./routes/x402");
@@ -135,6 +136,7 @@ app.use('/api/webhooks', webhooksRouter);
 app.use('/api/agent-hooks', agentHooksRouter);
 app.use('/api/health-checks', healthChecksRouter);
 app.use('/api/x402', x402Routes);
+app.use('/api/demo', demoRouter);
 
 // 404 handler
 app.use((req, res) => {

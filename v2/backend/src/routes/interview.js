@@ -113,7 +113,13 @@ function getCallbackUrl(req, interviewId) {
 }
 
 // Helper: Send webhook to agent
-async function sendWebhook(agent, payload) {
+async function sendWebhook(agent, payload, isDemo = false) {
+  // Skip webhooks for demo jobs
+  if (isDemo) {
+    console.log(`[Interview] Skipping webhook for demo interview`);
+    return null;
+  }
+
   if (!agent.webhook_url) {
     console.log(`[Interview] Agent ${agent.id} has no webhook_url configured`);
     return null;
@@ -363,7 +369,7 @@ router.post('/:id/answer', optionalWalletAuth, async (req, res) => {
 
     // Get interview with agent info
     const interview = db.prepare(`
-      SELECT i.*, a.id as agent_id, a.name as agent_name, a.webhook_url, a.webhook_secret
+      SELECT i.*, a.id as agent_id, a.name as agent_name, a.webhook_url, a.webhook_secret, i.is_demo
       FROM interviews i
       JOIN agents a ON i.agent_id = a.id
       WHERE i.id = ?
@@ -412,8 +418,8 @@ router.post('/:id/answer', optionalWalletAuth, async (req, res) => {
       webhook_secret: interview.webhook_secret
     };
 
-    // Send webhook (async)
-    sendWebhook(agent, webhookPayload);
+    // Send webhook (async) - skip for demo interviews
+    sendWebhook(agent, webhookPayload, interview.is_demo === 1);
 
     res.json({
       success: true,
@@ -517,7 +523,7 @@ router.post('/:id/request-spec', optionalWalletAuth, async (req, res) => {
 
     // Get interview with agent info
     const interview = db.prepare(`
-      SELECT i.*, a.id as agent_id, a.webhook_url, a.webhook_secret
+      SELECT i.*, a.id as agent_id, a.webhook_url, a.webhook_secret, i.is_demo
       FROM interviews i
       JOIN agents a ON i.agent_id = a.id
       WHERE i.id = ?
@@ -557,7 +563,7 @@ router.post('/:id/request-spec', optionalWalletAuth, async (req, res) => {
       webhook_secret: interview.webhook_secret
     };
 
-    sendWebhook(agent, webhookPayload);
+    sendWebhook(agent, webhookPayload, interview.is_demo === 1);
 
     res.json({
       success: true,
