@@ -1,76 +1,105 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const crypto = require('crypto');
+const { v4: uuidv4 } = require('uuid');
+
+// Generate short ID (same format as interview routes)
+const shortId = () => uuidv4().split('-')[0];
 
 /**
  * POST /api/demo/submit
- * Create a demo job (no auth required)
+ * Create a demo job and start interview automatically
  * Body: { projectType, description, twitterHandle? }
  */
 router.post('/submit', async (req, res) => {
-  try {
+  const transaction = db.transaction(() => {
     const { projectType, description, twitterHandle } = req.body;
     
     if (!projectType || !description) {
-      return res.status(400).json({ 
-        error: 'projectType and description are required' 
-      });
+      throw new Error('projectType and description are required');
     }
     
-    const jobId = crypto.randomUUID();
-    const interviewId = crypto.randomUUID();
+    const jobId = shortId();
+    const interviewId = shortId();
     
-    // Create demo job - no agent assigned yet, minimal wallet
-    const stmt = db.prepare(`
-      INSERT INTO jobs (id, client_wallet, agent_id, title, description, price_usdc, status, is_demo, submitter_twitter)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    
-    stmt.run(
+    // Create demo job - assigned to demo agent, no payment
+    db.prepare(`
+      INSERT INTO jobs (
+        id, client_wallet, agent_id, service_id, title, description, 
+        price_usdc, status, is_demo, submitter_twitter
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
       jobId,
-      'demo-user',           // placeholder wallet
-      'unassigned',          // no agent yet
+      'demo-user',           // placeholder wallet for demo
+      'demo-agent',          // special demo agent
+      null,                  // no service linked
       projectType,
       description,
-      0,                     // demo = free
-      'demo_pending',        // special demo status
+      0,                     // demo jobs are free
+      'pending',             // standard status
       1,                     // is_demo = true
       twitterHandle || null
     );
     
-    // Create interview record
-    const interviewStmt = db.prepare(`
-      INSERT INTO interviews (id, job_id, status, questions, answers, spec)
+    // Create interview record with demo flag
+    db.prepare(`
+      INSERT INTO interviews (
+        id, wallet_address, status, is_demo, 
+        project_type, submitter_twitter
+      )
       VALUES (?, ?, ?, ?, ?, ?)
-    `);
+    `).run(
+      interviewId,
+      'demo-user',
+      'in_progress',
+      1,                     // is_demo = true
+      projectType,
+      twitterHandle || null
+    );
     
-    try {
-      interviewStmt.run(
-        interviewId,
-        jobId,
-        'pending',
-        '[]',
-        '[]',
-        null
-      );
-    } catch (e) {
-      // interviews table might not exist, that's ok
-      console.log('Note: interviews table not available for demo');
-    }
+    // Save initial user message
+    db.prepare(`
+      INSERT INTO interview_messages (id, interview_id, role, content)
+      VALUES (?, ?, ?, ?)
+    `).run(
+      shortId(),
+      interviewId,
+      'user',
+      `I need a ${projectType}: ${description}`
+    );
+    
+    // Add initial AI greeting (simulate agent response)
+    db.prepare(`
+      INSERT INTO interview_messages (id, interview_id, role, content)
+      VALUES (?, ?, ?, ?)
+    `).run(
+      shortId(),
+      interviewId,
+      'assistant',
+      `Thanks for your interest! I'd love to help you build your ${projectType}. Let me ask you a few questions to understand your requirements better.\n\nFirst, who is the target audience for this project?`
+    );
+    
+    return { jobId, interviewId, projectType };
+  });
+
+  try {
+    const result = transaction(req.body);
     
     res.json({
       success: true,
-      jobId,
-      interviewId,
-      dashboardUrl: `https://viberr.fun/jobs/${jobId}`,
-      message: 'Demo job created! Visit your dashboard to see the job status.',
-      note: 'This is a demo job - no real payment or agent assignment.'
+      jobId: result.jobId,
+      interviewId: result.interviewId,
+      dashboardUrl: `https://viberr.fun/interview/${result.interviewId}`,
+      message: 'Demo interview started! You can now chat with the AI to refine your requirements.',
+      note: 'This is a demo - no real payment or agent assignment will occur.'
     });
     
   } catch (error) {
     console.error('Demo submit error:', error);
-    res.status(500).json({ error: 'Failed to create demo job' });
+    res.status(400).json({ 
+      error: error.message || 'Failed to create demo job'
+    });
   }
 });
 
