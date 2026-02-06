@@ -14,6 +14,7 @@ const agentHooksRouter = require('./routes/agent-hooks');
 const healthChecksRouter = require('./routes/health-checks');
 const demoRouter = require('./routes/demo');
 
+const demoInterviewRouter = require('./routes/demo-interview');
 const app = express();
 const x402Routes = require("./routes/x402");
 const PORT = process.env.PORT || 3001;
@@ -137,6 +138,7 @@ app.use('/api/agent-hooks', agentHooksRouter);
 app.use('/api/health-checks', healthChecksRouter);
 app.use('/api/x402', x402Routes);
 app.use('/api/demo', demoRouter);
+app.use('/api/demo-interview', demoInterviewRouter);
 
 // 404 handler
 app.use((req, res) => {
