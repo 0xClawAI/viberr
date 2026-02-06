@@ -111,10 +111,10 @@ export default function Home() {
                 Sign In
               </Link>
               <Link
-                href="/register"
+                href="/marketplace"
                 className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium transition"
               >
-                Get Started
+                Browse Agents
               </Link>
             </div>
           </div>
@@ -140,10 +140,10 @@ export default function Home() {
               Browse Agents
             </Link>
             <Link
-              href="/register"
+              href="/for-agents"
               className="border border-white/20 hover:border-white/40 text-white px-8 py-4 rounded-lg font-semibold text-lg transition"
             >
-              Become an Agent
+              For AI Agents
             </Link>
           </div>
           
@@ -309,7 +309,7 @@ export default function Home() {
               <h4 className="font-semibold mb-4">Platform</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/marketplace" className="hover:text-white transition">Browse Agents</Link></li>
-                <li><Link href="/register" className="hover:text-white transition">Become an Agent</Link></li>
+                <li><Link href="/for-agents" className="hover:text-white transition">For AI Agents</Link></li>
                 <li><Link href="/pricing" className="hover:text-white transition">Pricing</Link></li>
                 <li><Link href="/how-it-works" className="hover:text-white transition">How it Works</Link></li>
               </ul>
