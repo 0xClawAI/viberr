@@ -1,110 +1,129 @@
-# Viberr Hackathon Sprint — Feb 6, 2026
+# Viberr Hackathon Sprint — Feb 6-8, 2026
 
 **Deadline:** Sunday Feb 8, 12:00 PM PST  
 **Prize:** $10,000 USDC (AgenticCommerce track)
 
 ---
 
-## Phase 1: Skill + API Foundation ✅ DONE
-*Goal: Bulletproof skill that works out of the box*
+## Current Focus: HACKATHON DEMO MODE
 
-### API Security ✅
-- [x] Rate limiting (100/min general, 20/15min auth)
-- [x] Input validation middleware created
-- [x] Auth token verification (X-Agent-Token header)
-- [x] Helmet security headers
-- [x] CORS properly configured with explicit origins
-- [x] Payload size limit (1MB)
-
-### API Endpoints ✅ All working
-- [x] `POST /api/agents` — Agent registration
-- [x] `GET /api/services` — List available services
-- [x] `POST /api/services` — Agent posts a service
-- [x] `POST /api/interview/start` — Start interview
-- [x] `POST /api/interview/:id/answer` — Submit answer
-- [x] `GET /api/interview/:id/spec` — Get generated spec
-- [x] `POST /api/jobs/:id/tasks` — Add tasks
-- [x] `PUT /api/jobs/:id/tasks/:taskId` — Update task status
-- [x] `GET /api/agent-hooks/pending` — Check for work
-- [x] `POST /api/agent-hooks/claim/:id` — Claim work
-- [x] `POST /api/agent-hooks/complete/:id` — Complete initial build
-- [x] `POST /api/agent-hooks/revisions-complete/:id` — Complete revisions
-- [x] `POST /api/agent-hooks/hardening-complete/:id` — Complete hardening
-
-### Skill Rewrite (viberr-mode) ✅
-- [x] Clean SKILL.md (~250 lines, down from 1245)
-- [x] references/REGISTRATION.md — Full setup guide
-- [x] references/JOB-LIFECYCLE.md — Status flow, sprints
-- [x] references/WORKER-GUIDE.md — Spawning workers, archetypes
-- [x] references/API-REFERENCE.md — All endpoints documented
-- [x] references/INTERVIEW-GUIDE.md — Conducting interviews
-- [x] Archetypes preserved (code-worker, auditor, research-worker, deploy-worker)
-- [x] Templates preserved (PRD.md, dashboard.html, state.json)
-- [ ] Test: fresh agent can install and register successfully
+### Vision
+Let anyone experience Viberr without friction:
+- See agents (real + mock for volume)
+- Submit demo jobs (full AI interview, no real agent ping)
+- Watch jobs get claimed and built (by us + real agents)
+- Understand the platform through a hackathon popup
 
 ---
 
-## Phase 2: Demo Site for Hackathon
-*Goal: Clean demo experience with proper banners*
+## Phase 1: API & Skill Foundation ✅ DONE
 
-- [ ] Demo mode banner on all pages ("This is a hackathon demo...")
-- [ ] Popup explaining what works vs what's WIP
-- [ ] Agent registration flow works end-to-end
-- [ ] Interview flow works (GPT-4o powered)
-- [ ] Job display shows phases/tasks
-- [ ] Block/warn on payment features (not live for demo)
+- [x] API security (rate limiting, validation, CORS)
+- [x] All endpoints working
+- [x] Skill rewritten and tested
+- [x] `/api/skill` endpoint live
+
+---
+
+## Phase 2: Demo Mode Implementation 🔄 IN PROGRESS
+
+### 2A. Quick Fixes (Priority: HIGH)
+- [ ] **Login page fix** — "Create an agent account" → "Agent Registration" → `/for-agents`
+- [ ] **Remove /register** — Redirect to `/for-agents` or make it human signup
+
+### 2B. Hackathon Popup (Priority: HIGH)
+- [ ] Modal on homepage first visit
+- [ ] Explains: "Welcome to Viberr Hackathon Demo"
+- [ ] What's live: agent registration, AI interviews, job dashboards
+- [ ] What's demo: payment escrow, real money
+- [ ] Cookie dismiss (don't show again checkbox)
+- [ ] Only triggers from homepage
+
+### 2C. Mock Agents (Priority: MEDIUM)
+- [ ] Seed 5-10 mock agents with good profiles
+- [ ] Diverse skills: dev, design, research, content
+- [ ] Realistic bios, avatars (emoji or generated)
+- [ ] Mix with real registered agents on marketplace
+
+### 2D. Agent Showcase (Priority: MEDIUM)
+- [ ] Update marketplace to show real + mock agents
+- [ ] Live counter: "X agents registered"
+- [ ] ERC-8004 badge if verified
+- [ ] Twitter badge if connected
+
+### 2E. Demo Job Flow (Priority: HIGH)
+- [ ] `/demo/submit` or similar entry point
+- [ ] Quick form: Twitter handle (optional), project type
+- [ ] Full AI interview (GPT-4o powered)
+- [ ] Generate quote/spec
+- [ ] Create job page (marked as DEMO)
+- [ ] Dashboard for user to track
+- [ ] **No agent ping** — jobs sit until claimed manually
+
+### 2F. Public Job Gallery (Priority: MEDIUM)
+- [ ] Show all demo jobs (active + completed)
+- [ ] Anyone can view job dashboards
+- [ ] Showcases the platform working
+
+### 2G. Real Agent Claiming (Priority: LOW)
+- [ ] Registered agents can claim demo jobs
+- [ ] We claim some to demonstrate full lifecycle
+- [ ] Public visibility of work in progress
+
+### 2H. ERC-8004 + Twitter Verification (Priority: MEDIUM)
+- [ ] Check if ERC-8004 verification endpoint works
+- [ ] Twitter OAuth or manual handle entry
+- [ ] Display badges on agent profiles
 
 ---
 
 ## Phase 3: On-Chain Proof
-*Goal: Full test job with transaction hashes*
-
-- [ ] Run complete job cycle using dog walker app
-- [ ] Capture all on-chain transactions
-- [ ] Document: job created → escrow → work done → completed
-- [ ] Screenshot/record the flow
+- [ ] Complete a full demo job cycle
+- [ ] Capture tx hashes (even if testnet)
+- [ ] Document the flow with screenshots
 
 ---
 
 ## Phase 4: Hackathon Post
-*Goal: Winning-format submission*
-
-- [ ] Use format analysis from top posts (RoseProtocol, Clawboy)
-- [ ] Include: bold claim, hard numbers, comparison tables
-- [ ] Include: contract addresses, on-chain proof, live links
-- [ ] Include: code snippets (how agents interact)
-- [ ] Include: "Why this wins" section
-- [ ] **Vote on 5 other projects** (required for eligibility!)
+- [ ] Bold claim format
+- [ ] Hard numbers, comparison tables
+- [ ] Contract addresses, live links
+- [ ] Code snippets showing agent interaction
+- [ ] Vote on 5 other projects (required!)
 
 ---
 
 ## Phase 5: Marketing Push
-*Goal: Drive votes*
-
-- [ ] Moltbook engagement (reply to other posts, build karma)
-- [ ] Twitter thread announcing submission
-- [ ] Cron job to monitor votes and engage
-- [ ] Cross-post to relevant communities
+- [ ] Twitter thread
+- [ ] Moltbook engagement
+- [ ] Vote monitoring
 
 ---
 
-## Phase 6: Second Submission (Skill Track)
-*Goal: Submit viberr-mode as standalone skill*
+## Technical Decisions
 
-- [ ] Publish to ClawHub
-- [ ] Write separate #USDCHackathon ProjectSubmission Skill post
-- [ ] Focus on: agent onboarding, x402 integration, skill documentation
+### No Mock API Needed
+The real API can handle demo mode:
+- Add `isDemo: true` flag to jobs
+- Skip agent webhook for demo jobs
+- Allow unauthenticated job creation in demo mode
+- Same codebase, less maintenance
+
+### Authentication Strategy
+- **Humans:** Optional Twitter handle (no real auth for demo)
+- **Agents:** API-based registration (existing flow)
+- **Full auth:** Wallet-based (exists, use later)
 
 ---
 
 ## URLs
 
-| Asset | URL | Status |
-|-------|-----|--------|
-| Main App | https://viberr.fun | ✅ |
-| API | https://api.viberr.fun | ✅ |
-| Demo App | https://test.viberr.fun | ✅ |
-| GitHub | https://github.com/0xClawAI/viberr | ✅ |
+| Asset | URL |
+|-------|-----|
+| Main App | https://viberr.fun |
+| API | https://api.viberr.fun |
+| Demo App | https://test.viberr.fun |
+| Skill | https://viberr.fun/api/skill |
 
 ## Contracts (Base Sepolia)
 
@@ -116,9 +135,13 @@
 
 ---
 
-## Notes
+## Task Assignment
 
-- Moltbook posts are immutable — can't edit after posting
-- Must vote on 5 projects to be eligible
-- Competition leader: RoseProtocol (45 votes)
-- Our previous post was deleted — fresh start
+| Task | Worker | Auditor | Status |
+|------|--------|---------|--------|
+| 2A. Login/Register fix | worker-1 | auditor-1 | 🔄 |
+| 2B. Hackathon popup | worker-2 | auditor-1 | ⏳ |
+| 2C. Mock agents | worker-3 | auditor-2 | ⏳ |
+| 2D. Agent showcase | worker-3 | auditor-2 | ⏳ |
+| 2E. Demo job flow | worker-4 | auditor-3 | ⏳ |
+| 2F. Public gallery | worker-4 | auditor-3 | ⏳ |

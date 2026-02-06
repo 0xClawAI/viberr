@@ -5,54 +5,7 @@ import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { WalletButton } from "@/components/WalletButton";
-import { registerAgent, createService, getAgentByWallet } from "@/lib/api";
 import { useIsMounted } from "@/lib/hooks";
-
-// Available skills for agents
-const SKILL_OPTIONS = [
-  "Full-Stack Development",
-  "Frontend Development",
-  "Backend Development",
-  "Smart Contracts",
-  "Data Analysis",
-  "Machine Learning",
-  "UI/UX Design",
-  "Content Writing",
-  "SEO",
-  "Marketing",
-  "Research",
-  "Translation",
-];
-
-// Service categories
-const CATEGORIES = [
-  "Development",
-  "Design",
-  "Writing",
-  "Marketing",
-  "Data",
-  "Other",
-];
-
-interface ProfileData {
-  name: string;
-  bio: string;
-  avatar: string;
-  skills: string[];
-}
-
-interface TwitterData {
-  handle: string;
-  verified: boolean;
-}
-
-interface ServiceData {
-  name: string;
-  description: string;
-  price: string;
-  deliveryTime: string;
-  category: string;
-}
 
 // Loading component
 function LoadingScreen() {
@@ -72,116 +25,36 @@ function RegisterContent() {
   const { address, isConnected } = useAccount();
   const router = useRouter();
   
-  const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [_agentId, setAgentId] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   
   // Form data
-  const [profile, setProfile] = useState<ProfileData>({
-    name: "",
-    bio: "",
-    avatar: "🤖",
-    skills: [],
-  });
-  
-  const [twitter, setTwitter] = useState<TwitterData>({
-    handle: "",
-    verified: false,
-  });
-  
-  const [service, setService] = useState<ServiceData>({
-    name: "",
-    description: "",
-    price: "",
-    deliveryTime: "3 days",
-    category: "Development",
+  const [formData, setFormData] = useState({
+    email: "",
+    twitterHandle: "",
   });
 
-  // Check if wallet is already registered
-  useEffect(() => {
-    if (!mounted) return;
-    if (address) {
-      getAgentByWallet(address).then((agent) => {
-        if (agent) {
-          // Already registered, redirect to dashboard
-          router.push("/dashboard");
-        }
-      });
-    }
-  }, [address, router, mounted]);
-
-  // Progress when wallet connects
-  useEffect(() => {
-    if (!mounted) return;
-    if (isConnected && currentStep === 1) {
-      setCurrentStep(2);
-    }
-  }, [isConnected, currentStep, mounted]);
-
-  const steps = [
-    { number: 1, title: "Connect Wallet", icon: "🔗" },
-    { number: 2, title: "Profile", icon: "👤" },
-    { number: 3, title: "Twitter (Optional)", icon: "🐦" },
-    { number: 4, title: "Create Service", icon: "🚀" },
-  ];
-
-  const toggleSkill = (skill: string) => {
-    setProfile((prev) => ({
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
       ...prev,
-      skills: prev.skills.includes(skill)
-        ? prev.skills.filter((s) => s !== skill)
-        : [...prev.skills, skill],
+      [name]: value,
     }));
   };
 
-  const avatarOptions = ["🤖", "🧠", "⚡", "🎨", "💻", "📊", "🔮", "🦾"];
-
-  const handleProfileSubmit = () => {
-    if (!profile.name.trim()) {
-      setError("Name is required");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.email.trim()) {
+      setError("Email is required");
       return;
     }
-    if (!profile.bio.trim()) {
-      setError("Bio is required");
-      return;
-    }
-    if (profile.skills.length === 0) {
-      setError("Select at least one skill");
-      return;
-    }
-    setError("");
-    setCurrentStep(3);
-  };
-
-  const handleTwitterSkip = () => {
-    setCurrentStep(4);
-  };
-
-  const handleTwitterVerify = () => {
-    // In a real app, this would initiate OAuth flow
-    // For now, just mark as "verified" if handle provided
-    if (twitter.handle.trim()) {
-      setTwitter((prev) => ({ ...prev, verified: true }));
-    }
-    setCurrentStep(4);
-  };
-
-  const handleFinalSubmit = async () => {
-    if (!service.name.trim()) {
-      setError("Service name is required");
-      return;
-    }
-    if (!service.description.trim()) {
-      setError("Service description is required");
-      return;
-    }
-    if (!service.price || parseFloat(service.price) <= 0) {
-      setError("Valid price is required");
-      return;
-    }
-    if (!address) {
-      setError("Wallet not connected");
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address");
       return;
     }
 
@@ -189,30 +62,22 @@ function RegisterContent() {
     setError("");
 
     try {
-      // Register agent
-      const agent = await registerAgent({
-        walletAddress: address,
-        name: profile.name,
-        bio: profile.bio,
-        avatar: profile.avatar,
-        skills: profile.skills,
-        twitterHandle: twitter.handle || undefined,
+      // TODO: Implement actual user registration API call
+      // For now, just simulate success
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      
+      console.log("Human signup:", {
+        email: formData.email,
+        twitterHandle: formData.twitterHandle || undefined,
+        walletAddress: address || undefined,
       });
-
-      setAgentId(agent.id);
-
-      // Create first service
-      await createService({
-        agentId: agent.id,
-        name: service.name,
-        description: service.description,
-        price: parseFloat(service.price),
-        deliveryTime: service.deliveryTime,
-        category: service.category,
-      });
-
-      // Redirect to dashboard
-      router.push("/dashboard");
+      
+      setSuccess(true);
+      
+      // Redirect to dashboard after 2 seconds
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -234,64 +99,39 @@ function RegisterContent() {
               <span className="text-2xl">⚡</span>
               <span className="text-xl font-bold">Viberr</span>
             </Link>
-            <WalletButton />
+            <div className="flex items-center gap-4">
+              <Link href="/login" className="text-gray-300 hover:text-white transition">
+                Sign In
+              </Link>
+              <WalletButton />
+            </div>
           </div>
         </div>
       </nav>
 
-      <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mx-auto">
+      <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center justify-center">
+        <div className="max-w-md w-full">
           {/* Header */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6">
+              🎯
+            </div>
             <h1 className="text-3xl sm:text-4xl font-bold mb-4">
-              Become an Agent
+              Join Viberr
             </h1>
             <p className="text-gray-400">
-              Set up your profile and start earning on Viberr
+              Create your account and discover AI agents
             </p>
           </div>
 
-          {/* Progress Steps */}
-          <div className="mb-12">
-            <div className="flex items-center justify-between">
-              {steps.map((step, index) => (
-                <div key={step.number} className="flex items-center">
-                  <div
-                    className={`flex items-center justify-center w-12 h-12 rounded-full text-xl transition ${
-                      currentStep >= step.number
-                        ? "bg-emerald-500 text-white"
-                        : "bg-white/10 text-gray-500"
-                    }`}
-                  >
-                    {currentStep > step.number ? "✓" : step.icon}
-                  </div>
-                  {index < steps.length - 1 && (
-                    <div
-                      className={`h-1 w-12 sm:w-20 mx-2 rounded ${
-                        currentStep > step.number
-                          ? "bg-emerald-500"
-                          : "bg-white/10"
-                      }`}
-                    />
-                  )}
-                </div>
-              ))}
+          {/* Success Message */}
+          {success && (
+            <div className="mb-6 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-lg text-emerald-400 text-center">
+              <div className="text-2xl mb-2">✓</div>
+              <p className="font-semibold mb-1">Registration Successful!</p>
+              <p className="text-sm">Redirecting to dashboard...</p>
             </div>
-            <div className="flex justify-between mt-2">
-              {steps.map((step) => (
-                <span
-                  key={step.number}
-                  className={`text-xs sm:text-sm ${
-                    currentStep >= step.number
-                      ? "text-emerald-400"
-                      : "text-gray-500"
-                  }`}
-                >
-                  {step.title}
-                </span>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Error Display */}
           {error && (
@@ -300,329 +140,130 @@ function RegisterContent() {
             </div>
           )}
 
-          {/* Step Content */}
-          <div className="bg-white/5 rounded-2xl p-6 sm:p-8 border border-white/10">
-            {/* Step 1: Connect Wallet */}
-            {currentStep === 1 && (
-              <div className="text-center py-8">
-                <div className="text-6xl mb-6">🔗</div>
-                <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
-                <p className="text-gray-400 mb-8">
-                  Connect your wallet to create your agent profile and receive
-                  payments
-                </p>
-                <WalletButton />
+          {/* Registration Form */}
+          {!success && (
+            <form onSubmit={handleSubmit} className="bg-white/5 rounded-2xl p-8 border border-white/10">
+              {/* Email */}
+              <div className="mb-6">
+                <label htmlFor="email" className="block text-sm font-medium mb-2">
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="your@email.com"
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"
+                />
               </div>
-            )}
 
-            {/* Step 2: Profile */}
-            {currentStep === 2 && (
-              <div>
-                <h2 className="text-2xl font-bold mb-6">Create Your Profile</h2>
-
-                {/* Avatar Selection */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-3">
-                    Choose Avatar
-                  </label>
-                  <div className="flex gap-3 flex-wrap">
-                    {avatarOptions.map((emoji) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() =>
-                          setProfile((prev) => ({ ...prev, avatar: emoji }))
-                        }
-                        className={`w-14 h-14 text-2xl rounded-xl flex items-center justify-center transition ${
-                          profile.avatar === emoji
-                            ? "bg-emerald-500/30 border-2 border-emerald-500"
-                            : "bg-white/10 border border-white/10 hover:border-white/30"
-                        }`}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Name */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2">
-                    Agent Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={profile.name}
-                    onChange={(e) =>
-                      setProfile((prev) => ({ ...prev, name: e.target.value }))
-                    }
-                    placeholder="e.g., CodeMaster"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"
-                  />
-                </div>
-
-                {/* Bio */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2">
-                    Bio *
-                  </label>
-                  <textarea
-                    value={profile.bio}
-                    onChange={(e) =>
-                      setProfile((prev) => ({ ...prev, bio: e.target.value }))
-                    }
-                    placeholder="Describe what you do and your expertise..."
-                    rows={4}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition resize-none"
-                  />
-                </div>
-
-                {/* Skills */}
-                <div className="mb-8">
-                  <label className="block text-sm font-medium mb-3">
-                    Skills * (select at least one)
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {SKILL_OPTIONS.map((skill) => (
-                      <button
-                        key={skill}
-                        type="button"
-                        onClick={() => toggleSkill(skill)}
-                        className={`px-4 py-2 rounded-full text-sm transition ${
-                          profile.skills.includes(skill)
-                            ? "bg-emerald-500 text-white"
-                            : "bg-white/10 text-gray-300 hover:bg-white/20"
-                        }`}
-                      >
-                        {skill}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleProfileSubmit}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-lg font-semibold transition"
-                >
-                  Continue
-                </button>
-              </div>
-            )}
-
-            {/* Step 3: Twitter Verification */}
-            {currentStep === 3 && (
-              <div>
-                <h2 className="text-2xl font-bold mb-6">
-                  Twitter Verification{" "}
-                  <span className="text-gray-500 text-lg font-normal">
-                    (Optional)
+              {/* Twitter Handle (Optional) */}
+              <div className="mb-6">
+                <label htmlFor="twitterHandle" className="block text-sm font-medium mb-2">
+                  Twitter Handle{" "}
+                  <span className="text-gray-500 text-xs font-normal">(optional)</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                    @
                   </span>
-                </h2>
-                <p className="text-gray-400 mb-6">
-                  Verify your Twitter account to build trust with clients.
-                  Verified agents get more jobs!
-                </p>
-
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2">
-                    Twitter Handle
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-                      @
-                    </span>
-                    <input
-                      type="text"
-                      value={twitter.handle}
-                      onChange={(e) =>
-                        setTwitter((prev) => ({
-                          ...prev,
-                          handle: e.target.value.replace("@", ""),
-                        }))
-                      }
-                      placeholder="yourhandle"
-                      className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"
-                    />
-                  </div>
-                </div>
-
-                {twitter.verified && (
-                  <div className="mb-6 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-lg flex items-center gap-3">
-                    <span className="text-emerald-400">✓</span>
-                    <span className="text-emerald-400">
-                      Twitter verified successfully!
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex gap-4">
-                  <button
-                    onClick={handleTwitterSkip}
-                    className="flex-1 border border-white/20 hover:border-white/40 text-white py-3 rounded-lg font-semibold transition"
-                  >
-                    Skip
-                  </button>
-                  <button
-                    onClick={handleTwitterVerify}
-                    disabled={!twitter.handle.trim()}
-                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition"
-                  >
-                    Verify & Continue
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Create Service */}
-            {currentStep === 4 && (
-              <div>
-                <h2 className="text-2xl font-bold mb-6">
-                  Create Your First Service
-                </h2>
-                <p className="text-gray-400 mb-6">
-                  Define a service you&apos;ll offer on the marketplace.
-                </p>
-
-                {/* Service Name */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2">
-                    Service Name *
-                  </label>
                   <input
                     type="text"
-                    value={service.name}
+                    id="twitterHandle"
+                    name="twitterHandle"
+                    value={formData.twitterHandle}
                     onChange={(e) =>
-                      setService((prev) => ({ ...prev, name: e.target.value }))
-                    }
-                    placeholder="e.g., Build a Landing Page"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"
-                  />
-                </div>
-
-                {/* Description */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2">
-                    Description *
-                  </label>
-                  <textarea
-                    value={service.description}
-                    onChange={(e) =>
-                      setService((prev) => ({
+                      setFormData((prev) => ({
                         ...prev,
-                        description: e.target.value,
+                        twitterHandle: e.target.value.replace("@", ""),
                       }))
                     }
-                    placeholder="Describe what's included in this service..."
-                    rows={4}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition resize-none"
+                    placeholder="yourhandle"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"
                   />
                 </div>
-
-                {/* Category */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={service.category}
-                    onChange={(e) =>
-                      setService((prev) => ({
-                        ...prev,
-                        category: e.target.value,
-                      }))
-                    }
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition"
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat} className="bg-[#0a0a0a]">
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                  {/* Price */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Price (USDC) *
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={service.price}
-                      onChange={(e) =>
-                        setService((prev) => ({
-                          ...prev,
-                          price: e.target.value,
-                        }))
-                      }
-                      placeholder="50"
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"
-                    />
-                  </div>
-
-                  {/* Delivery Time */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Delivery Time
-                    </label>
-                    <select
-                      value={service.deliveryTime}
-                      onChange={(e) =>
-                        setService((prev) => ({
-                          ...prev,
-                          deliveryTime: e.target.value,
-                        }))
-                      }
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition"
-                    >
-                      <option value="1 day" className="bg-[#0a0a0a]">
-                        1 day
-                      </option>
-                      <option value="3 days" className="bg-[#0a0a0a]">
-                        3 days
-                      </option>
-                      <option value="1 week" className="bg-[#0a0a0a]">
-                        1 week
-                      </option>
-                      <option value="2 weeks" className="bg-[#0a0a0a]">
-                        2 weeks
-                      </option>
-                      <option value="1 month" className="bg-[#0a0a0a]">
-                        1 month
-                      </option>
-                    </select>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleFinalSubmit}
-                  disabled={loading}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <span className="animate-spin">⏳</span> Creating...
-                    </>
-                  ) : (
-                    <>Complete Registration</>
-                  )}
-                </button>
               </div>
-            )}
+
+              {/* Wallet Connection (Optional) */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">
+                  Wallet{" "}
+                  <span className="text-gray-500 text-xs font-normal">(optional)</span>
+                </label>
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  {isConnected && address ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-400">✓</span>
+                        <span className="text-sm text-gray-300">
+                          {address.slice(0, 6)}...{address.slice(-4)}
+                        </span>
+                      </div>
+                      <WalletButton />
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <p className="text-sm text-gray-400 mb-3">
+                        Connect your wallet for future Web3 features
+                      </p>
+                      <WalletButton />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <span className="animate-spin">⏳</span> Creating Account...
+                  </>
+                ) : (
+                  <>Create Account</>
+                )}
+              </button>
+
+              {/* Terms */}
+              <p className="text-xs text-gray-500 text-center mt-4">
+                By signing up, you agree to our{" "}
+                <Link href="/terms" className="text-emerald-400 hover:text-emerald-300">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="text-emerald-400 hover:text-emerald-300">
+                  Privacy Policy
+                </Link>
+              </p>
+            </form>
+          )}
+
+          {/* Agent Registration Link */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-500 text-sm mb-3">
+              Are you an AI agent looking to offer services?
+            </p>
+            <Link
+              href="/for-agents"
+              className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition text-sm font-medium"
+            >
+              Learn about Agent Registration →
+            </Link>
           </div>
 
-          {/* Back button */}
-          {currentStep > 1 && currentStep < 4 && (
-            <button
-              onClick={() => setCurrentStep((prev) => prev - 1)}
-              className="mt-4 text-gray-400 hover:text-white transition"
-            >
-              ← Back
-            </button>
-          )}
+          {/* Already Have Account */}
+          <p className="text-center text-gray-500 text-sm mt-8">
+            Already have an account?{" "}
+            <Link href="/login" className="text-emerald-400 hover:text-emerald-300 transition">
+              Sign In
+            </Link>
+          </p>
         </div>
       </main>
     </div>

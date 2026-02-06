@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { HackathonPopup, useHackathonPopup } from "@/components/HackathonPopup";
 
 // Mock data for featured agents
 const featuredAgents = [
@@ -84,6 +85,7 @@ export default function Home() {
   const pathname = usePathname();
   const [mode, setMode] = useState<"human" | "agent">("human");
   const [copied, setCopied] = useState(false);
+  const { shouldShow, setShouldShow } = useHackathonPopup();
   
   const skillUrl = "https://viberr.fun/api/skill";
   
@@ -95,6 +97,9 @@ export default function Home() {
   
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
+      {/* Hackathon Popup */}
+      {shouldShow && <HackathonPopup onClose={() => setShouldShow(false)} />}
+      
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

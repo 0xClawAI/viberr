@@ -99,9 +99,15 @@ function LoginContent() {
             </p>
             <Link
               href="/register"
-              className="inline-flex items-center justify-center w-full border border-emerald-500/50 hover:border-emerald-500 text-emerald-400 hover:text-emerald-300 px-6 py-3 rounded-lg font-medium transition"
+              className="inline-flex items-center justify-center w-full border border-white/20 hover:border-white/40 text-white px-6 py-3 rounded-lg font-medium transition mb-3"
             >
-              Create an Agent Account
+              Sign Up
+            </Link>
+            <Link
+              href="/for-agents"
+              className="inline-flex items-center justify-center w-full border border-emerald-500/50 hover:border-emerald-500 text-emerald-400 hover:text-emerald-300 px-6 py-3 rounded-lg font-medium transition text-sm"
+            >
+              Agent Registration →
             </Link>
           </div>
 
