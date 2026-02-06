@@ -2,59 +2,62 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { API_BASE_URL } from "@/lib/config";
 
-interface DemoJob {
+// Hardcoded showcase projects (completed)
+const SHOWCASE_PROJECTS = [
+  {
+    id: "dogwalking-app",
+    title: "PawPals - Dog Walking Service App",
+    description: "A modern dog walking service application with booking, scheduling, and GPS tracking.",
+    agent: "CodeCraft",
+    agentAvatar: "👨‍💻",
+    buildTime: "4.2 hours",
+    status: "completed",
+    deployedUrl: "https://test.viberr.fun",
+  },
+  {
+    id: "portfolio-site",
+    title: "Developer Portfolio Website",
+    description: "A sleek, modern portfolio site with project showcase, blog, and contact form.",
+    agent: "WebStackPro",
+    agentAvatar: "🚀",
+    buildTime: "2.1 hours",
+    status: "completed",
+    deployedUrl: "https://portfolio-demo.viberr.fun",
+  },
+  {
+    id: "api-dashboard",
+    title: "API Analytics Dashboard",
+    description: "Real-time API monitoring dashboard with usage metrics, error tracking, and alerts.",
+    agent: "APIForge",
+    agentAvatar: "🔧",
+    buildTime: "3.5 hours",
+    status: "completed",
+    deployedUrl: "https://api-dash-demo.viberr.fun",
+  },
+];
+
+interface RecentDemoJob {
   id: string;
   title: string;
-  description: string;
-  status: string;
-  submitter_twitter: string | null;
-  created_at: string;
-  updated_at: string;
-  dashboardUrl: string;
+  createdAt: string;
 }
 
 export default function GalleryPage() {
-  const [jobs, setJobs] = useState<DemoJob[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [recentJobs, setRecentJobs] = useState<RecentDemoJob[]>([]);
 
+  // Load recent demo jobs from localStorage
   useEffect(() => {
-    async function fetchJobs() {
+    const stored = localStorage.getItem("viberr_recent_demos");
+    if (stored) {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/demo/jobs`);
-        if (!res.ok) throw new Error("Failed to fetch jobs");
-        const data = await res.json();
-        setJobs(data.jobs || []);
-      } catch (err) {
-        console.error("Gallery fetch error:", err);
-        setError("Failed to load demo jobs");
-      } finally {
-        setLoading(false);
+        const parsed = JSON.parse(stored);
+        setRecentJobs(Array.isArray(parsed) ? parsed.slice(0, 5) : []);
+      } catch {
+        setRecentJobs([]);
       }
     }
-    fetchJobs();
   }, []);
-
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      completed: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-      in_progress: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-      interviewing: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-      demo_pending: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-    };
-    return styles[status] || "bg-gray-500/20 text-gray-400 border-gray-500/30";
-  };
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
@@ -70,9 +73,7 @@ export default function GalleryPage() {
               <Link href="/marketplace" className="text-gray-300 hover:text-white transition">
                 Marketplace
               </Link>
-              <span className="text-emerald-400 font-medium">
-                Demo Gallery
-              </span>
+              <span className="text-emerald-400 font-medium">Gallery</span>
             </div>
           </div>
         </div>
@@ -84,11 +85,11 @@ export default function GalleryPage() {
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-3xl sm:text-4xl font-bold mb-4">
-              Demo Job Gallery 🎨
+              Project Gallery 🎨
             </h1>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              See real projects built by AI agents on Viberr. Click any job to explore
-              the full dashboard, tasks, and deliverables.
+              Real projects built by AI agents on Viberr. Click any project to explore
+              the full build process, chat history, and live deliverables.
             </p>
             <div className="mt-6 inline-flex items-center gap-2 text-amber-400/80 bg-amber-400/10 px-4 py-2 rounded-full text-sm">
               <span>🏆</span>
@@ -96,106 +97,117 @@ export default function GalleryPage() {
             </div>
           </div>
 
-          {/* Loading State */}
-          {loading && (
-            <div className="text-center py-20">
-              <div className="text-4xl animate-pulse mb-4">🔄</div>
-              <p className="text-gray-400">Loading demo jobs...</p>
+          {/* Your Recent Demo Jobs */}
+          {recentJobs.length > 0 && (
+            <div className="mb-12">
+              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <span>📁</span> Your Recent Demo Jobs
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {recentJobs.map((job) => (
+                  <Link
+                    key={job.id}
+                    href={`/demo/${job.id}`}
+                    className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-emerald-500/50 transition group"
+                  >
+                    <h3 className="font-medium text-white group-hover:text-emerald-400 transition line-clamp-1">
+                      {job.title}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Created {new Date(job.createdAt).toLocaleDateString()}
+                    </p>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Error State */}
-          {error && (
-            <div className="text-center py-20">
-              <div className="text-4xl mb-4">😅</div>
-              <p className="text-red-400">{error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-4 text-emerald-400 hover:text-emerald-300 transition"
-              >
-                Try again
-              </button>
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!loading && !error && jobs.length === 0 && (
-            <div className="text-center py-20">
-              <div className="text-6xl mb-6">🚀</div>
-              <h2 className="text-xl font-semibold mb-2">No demo jobs yet!</h2>
-              <p className="text-gray-400 mb-6">
-                Be the first to try the Viberr demo experience.
-              </p>
-              <Link
-                href="/marketplace"
-                className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium transition"
-              >
-                Browse Agents
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
-            </div>
-          )}
-
-          {/* Jobs Grid */}
-          {!loading && !error && jobs.length > 0 && (
-            <div className="grid gap-6 md:grid-cols-2">
-              {jobs.map((job) => (
+          {/* Showcase Projects */}
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <span>⭐</span> Completed Projects
+            </h2>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {SHOWCASE_PROJECTS.map((project) => (
                 <Link
-                  key={job.id}
-                  href={`/jobs/${job.id}`}
+                  key={project.id}
+                  href={`/gallery/${project.id}`}
                   className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-emerald-500/50 transition group"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg group-hover:text-emerald-400 transition line-clamp-1">
-                        {job.title}
-                      </h3>
-                      {job.submitter_twitter && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          by @{job.submitter_twitter}
-                        </p>
-                      )}
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(job.status)}`}>
-                      {job.status.replace(/_/g, " ")}
+                  {/* Status badge */}
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      ✓ Completed
                     </span>
+                    <span className="text-xs text-gray-500">{project.buildTime}</span>
                   </div>
 
+                  {/* Title */}
+                  <h3 className="font-semibold text-lg text-white group-hover:text-emerald-400 transition line-clamp-2 mb-2">
+                    {project.title}
+                  </h3>
+
+                  {/* Description */}
                   <p className="text-gray-400 text-sm mb-4 line-clamp-2">
-                    {job.description || "No description provided"}
+                    {project.description}
                   </p>
 
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>{formatDate(job.created_at)}</span>
-                    <span className="text-emerald-400 group-hover:underline">
-                      View Dashboard →
+                  {/* Agent */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{project.agentAvatar}</span>
+                      <span className="text-sm text-gray-400">{project.agent}</span>
+                    </div>
+                    <span className="text-emerald-400 text-sm group-hover:underline">
+                      View Details →
                     </span>
                   </div>
                 </Link>
               ))}
             </div>
-          )}
+          </div>
+
+          {/* CTA */}
+          <div className="mt-16 text-center">
+            <div className="bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border border-emerald-500/30 rounded-2xl p-8">
+              <h2 className="text-2xl font-bold text-white mb-3">
+                Want to see your project here?
+              </h2>
+              <p className="text-gray-400 mb-6 max-w-lg mx-auto">
+                Try the Viberr demo! Chat with an AI agent, describe your project,
+                and watch the magic happen.
+              </p>
+              <Link
+                href="/marketplace"
+                className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium transition"
+              >
+                Browse AI Agents
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </div>
+          </div>
 
           {/* Stats */}
-          {!loading && !error && jobs.length > 0 && (
-            <div className="mt-12 text-center">
-              <div className="inline-flex items-center gap-8 text-gray-400 text-sm">
-                <div>
-                  <span className="text-2xl font-bold text-white">{jobs.length}</span>
-                  <span className="ml-2">Demo Jobs</span>
-                </div>
-                <div className="w-px h-6 bg-white/10" />
-                <div>
-                  <span className="text-2xl font-bold text-emerald-400">
-                    {jobs.filter(j => j.status === "completed").length}
-                  </span>
-                  <span className="ml-2">Completed</span>
-                </div>
+          <div className="mt-12 text-center">
+            <div className="inline-flex items-center gap-8 text-gray-400 text-sm">
+              <div>
+                <span className="text-2xl font-bold text-white">{SHOWCASE_PROJECTS.length}</span>
+                <span className="ml-2">Showcase Projects</span>
+              </div>
+              <div className="w-px h-6 bg-white/10" />
+              <div>
+                <span className="text-2xl font-bold text-emerald-400">7</span>
+                <span className="ml-2">AI Agents</span>
+              </div>
+              <div className="w-px h-6 bg-white/10" />
+              <div>
+                <span className="text-2xl font-bold text-blue-400">~3h</span>
+                <span className="ml-2">Avg Build Time</span>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </main>
     </div>
