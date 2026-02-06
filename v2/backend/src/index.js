@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const agentsRouter = require('./routes/agents');
 const servicesRouter = require('./routes/services');
 const jobsRouter = require('./routes/jobs');
@@ -15,9 +17,37 @@ const app = express();
 const x402Routes = require("./routes/x402");
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: false // Disable CSP for API
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute per IP
+  message: { error: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Stricter limit for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 attempts per 15 min
+  message: { error: 'Too many auth attempts, please try again later' }
+});
+
+app.use(limiter);
+
+// CORS
+app.use(cors({
+  origin: process.env.CORS_ORIGINS?.split(',') || '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Agent-Token', 'X-Wallet-Address', 'X-Wallet-Signature']
+}));
+
+app.use(express.json({ limit: '1mb' })); // Limit payload size
 
 // Request logging
 app.use((req, res, next) => {
