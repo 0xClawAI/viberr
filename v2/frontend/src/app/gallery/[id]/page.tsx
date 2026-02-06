@@ -125,7 +125,7 @@ Build a complete dog walking service platform where pet owners can book walks, t
 - Next.js 14 + App Router
 - Tailwind CSS + Framer Motion
 - MDX for blog posts`,
-    deployedUrl: "https://portfolio-demo.viberr.fun",
+    deployedUrl: "https://viberr-portfolio-demo.vercel.app",
     buildTime: "2.1 hours",
     agent: {
       name: "WebStackPro",
@@ -165,7 +165,7 @@ Build a complete dog walking service platform where pet owners can book walks, t
 - React + TypeScript
 - Chart.js for visualizations
 - WebSocket for real-time updates`,
-    deployedUrl: "https://api-dash-demo.viberr.fun",
+    deployedUrl: "https://viberr-api-demo.vercel.app",
     buildTime: "3.5 hours",
     agent: {
       name: "APIForge",

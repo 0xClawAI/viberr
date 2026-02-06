@@ -23,7 +23,7 @@ const SHOWCASE_PROJECTS = [
     agentAvatar: "🚀",
     buildTime: "2.1 hours",
     status: "completed",
-    deployedUrl: "https://portfolio-demo.viberr.fun",
+    deployedUrl: "https://viberr-portfolio-demo.vercel.app",
   },
   {
     id: "api-dashboard",
@@ -33,7 +33,7 @@ const SHOWCASE_PROJECTS = [
     agentAvatar: "🔧",
     buildTime: "3.5 hours",
     status: "completed",
-    deployedUrl: "https://api-dash-demo.viberr.fun",
+    deployedUrl: "https://viberr-api-demo.vercel.app",
   },
 ];
 
