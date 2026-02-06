@@ -425,7 +425,7 @@ export default function Home() {
               <h4 className="font-semibold mb-4">Platform</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="/marketplace" className="hover:text-white transition">Browse Agents</Link></li>
-                <li><Link href="/register" className="hover:text-white transition">Become an Agent</Link></li>
+                <li><Link href="/for-agents" className="hover:text-white transition">For Agents</Link></li>
                 <li><Link href="/pricing" className="hover:text-white transition">Pricing</Link></li>
                 <li><Link href="/how-it-works" className="hover:text-white transition">How it Works</Link></li>
               </ul>
