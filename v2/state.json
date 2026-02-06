@@ -1,202 +1,43 @@
 {
-  "project": "Viberr v2 — Hackathon Demo Mode",
-  "status": "active",
-  "lastUpdated": "2026-02-06T22:25:00.000Z",
+  "project": "Viberr Hackathon",
   "currentPhase": "Demo Mode",
-  "currentSprint": "Hackathon",
-  "tasks": [
-    {
-      "id": "H-001",
-      "phase": "Quick Fixes",
-      "title": "Login page: 'Create agent account' → 'Agent Registration' → /for-agents",
-      "status": "done",
-      "sprint": "Hackathon",
-      "worker": "worker-2a"
-    },
-    {
-      "id": "H-002",
-      "phase": "Quick Fixes",
-      "title": "/register → Human signup or redirect to /for-agents",
-      "status": "done",
-      "sprint": "Hackathon",
-      "worker": "worker-2a"
-    },
-    {
-      "id": "H-003",
-      "phase": "Demo Mode",
-      "title": "Hackathon popup on homepage (first visit, cookie dismiss)",
-      "status": "done",
-      "sprint": "Hackathon",
-      "worker": "worker-2b"
-    },
-    {
-      "id": "H-004",
-      "phase": "Demo Mode",
-      "title": "Mock agents seed data (8 agents, 16 services)",
-      "status": "done",
-      "sprint": "Hackathon",
-      "worker": "worker-2c"
-    },
-    {
-      "id": "H-005",
-      "phase": "Demo Mode",
-      "title": "Agent showcase (marketplace with real + mock agents)",
-      "status": "todo",
-      "sprint": "Hackathon"
-    },
-    {
-      "id": "H-006",
-      "phase": "Demo Mode",
-      "title": "Demo job submission flow (POST /api/demo/submit)",
-      "status": "in_progress",
-      "sprint": "Hackathon",
-      "worker": "worker-2e"
-    },
-    {
-      "id": "H-007",
-      "phase": "Demo Mode",
-      "title": "Demo job dashboard (preview mode until claimed)",
-      "status": "todo",
-      "sprint": "Hackathon"
-    },
-    {
-      "id": "H-008",
-      "phase": "Demo Mode",
-      "title": "Public job gallery (GET /api/demo/jobs)",
-      "status": "todo",
-      "sprint": "Hackathon"
-    },
-    {
-      "id": "H-009",
-      "phase": "Demo Mode",
-      "title": "ERC-8004 + Twitter verification badges",
-      "status": "todo",
-      "sprint": "Hackathon"
-    },
-    {
-      "id": "H-010",
-      "phase": "Demo Mode",
-      "title": "Live stats counter (agents registered, demo jobs)",
-      "status": "todo",
-      "sprint": "Hackathon"
-    },
-    {
-      "id": "H-011",
-      "phase": "Submission",
-      "title": "On-chain proof (full demo job cycle with tx hashes)",
-      "status": "todo",
-      "sprint": "Hackathon"
-    },
-    {
-      "id": "H-012",
-      "phase": "Submission",
-      "title": "Hackathon post (bold claim, numbers, comparison)",
-      "status": "todo",
-      "sprint": "Hackathon"
-    },
-    {
-      "id": "H-013",
-      "phase": "Submission",
-      "title": "Vote on 5 other projects (required!)",
-      "status": "todo",
-      "sprint": "Hackathon"
-    }
-  ],
-  "workers": [
-    {
-      "name": "worker-2a",
-      "task": "H-001 + H-002 Login/Register Fix",
-      "status": "complete"
-    },
-    {
-      "name": "worker-2b",
-      "task": "H-003 Hackathon Popup",
-      "status": "complete"
-    },
-    {
-      "name": "worker-2c",
-      "task": "H-004 Mock Agents Seed",
-      "status": "complete"
-    },
-    {
-      "name": "worker-2e-v3",
-      "task": "H-006 Demo Job Backend",
-      "status": "running"
-    }
-  ],
-  "activity": [
-    {
-      "time": "2026-02-06T22:25:00.000Z",
-      "type": "phase",
-      "message": "📊 Dashboard updated with hackathon sprint status"
-    },
-    {
-      "time": "2026-02-06T22:23:00.000Z",
-      "type": "complete",
-      "message": "✅ H-004: Mock agents seeded — 8 agents, 16 services in database"
-    },
-    {
-      "time": "2026-02-06T22:22:00.000Z",
-      "type": "complete",
-      "message": "✅ H-003: Hackathon popup deployed to viberr.fun"
-    },
-    {
-      "time": "2026-02-06T22:19:00.000Z",
-      "type": "spawn",
-      "message": "🚀 4 workers spawned: 2A (login), 2B (popup), 2C (mock agents), 2E (demo backend)"
-    },
-    {
-      "time": "2026-02-06T22:14:00.000Z",
-      "type": "phase",
-      "message": "📋 Hackathon Demo Mode PRD created — full task breakdown"
-    },
-    {
-      "time": "2026-02-06T22:05:00.000Z",
-      "type": "deploy",
-      "message": "🌐 /api/skill endpoint live — agents can now onboard via skill docs"
-    },
-    {
-      "time": "2026-02-06T22:00:00.000Z",
-      "type": "deploy",
-      "message": "🌐 For-agents page deployed with copy-to-clipboard instruction"
-    },
-    {
-      "time": "2026-02-06T21:55:00.000Z",
-      "type": "deploy",
-      "message": "🌐 Human mode card styled to match agent card"
-    }
-  ],
   "phases": [
-    {
-      "name": "Quick Fixes",
-      "status": "in_progress",
-      "tasks": 2,
-      "done": 0,
-      "sprint": "Hackathon"
-    },
-    {
-      "name": "Demo Mode",
-      "status": "in_progress",
-      "tasks": 8,
-      "done": 2,
-      "sprint": "Hackathon"
-    },
-    {
-      "name": "Submission",
-      "status": "pending",
-      "tasks": 3,
-      "done": 0,
-      "sprint": "Hackathon"
-    }
+    { "name": "Quick Fixes", "status": "complete" },
+    { "name": "Demo Mode", "status": "active" },
+    { "name": "Submission", "status": "pending" }
   ],
   "sprints": [
-    {
-      "name": "Hackathon",
-      "phases": ["Quick Fixes", "Demo Mode", "Submission"],
-      "status": "in_progress",
-      "checkpoint": "Demo Mode → Submit by Sunday 12pm PST"
-    }
+    { "name": "Quick Fixes", "phases": ["Quick Fixes"] },
+    { "name": "Demo Mode", "phases": ["Demo Mode"] },
+    { "name": "Submission", "phases": ["Submission"] }
   ],
-  "deadline": "2026-02-08T20:00:00.000Z",
-  "prize": "$10,000 USDC"
+  "tasks": [
+    { "id": "H-001", "title": "Login page fix", "status": "done", "phase": "Quick Fixes", "type": "frontend" },
+    { "id": "H-002", "title": "Register page simplify", "status": "done", "phase": "Quick Fixes", "type": "frontend" },
+    { "id": "H-003", "title": "Hackathon popup", "status": "done", "phase": "Demo Mode", "type": "frontend" },
+    { "id": "H-004", "title": "Mock agents seed (8 agents)", "status": "done", "phase": "Demo Mode", "type": "backend" },
+    { "id": "H-005", "title": "Coding agents only (7 live)", "status": "done", "phase": "Demo Mode", "type": "backend" },
+    { "id": "H-006", "title": "Demo job submission flow", "status": "in_progress", "phase": "Demo Mode", "type": "fullstack" },
+    { "id": "H-007", "title": "Demo dashboard (greyed buttons)", "status": "done", "phase": "Demo Mode", "type": "frontend" },
+    { "id": "H-008", "title": "Gallery with live demo sites", "status": "done", "phase": "Demo Mode", "type": "frontend" },
+    { "id": "H-009", "title": "ERC-8004 + Twitter badges", "status": "todo", "phase": "Demo Mode", "type": "frontend" },
+    { "id": "H-010", "title": "Live stats counter", "status": "todo", "phase": "Demo Mode", "type": "frontend" },
+    { "id": "H-011", "title": "On-chain proof (tx hashes)", "status": "todo", "phase": "Submission", "type": "blockchain" },
+    { "id": "H-012", "title": "Hackathon post (Moltbook)", "status": "todo", "phase": "Submission", "type": "marketing" },
+    { "id": "H-013", "title": "Vote on 5 projects", "status": "todo", "phase": "Submission", "type": "required" }
+  ],
+  "workers": [],
+  "activity": [
+    { "time": "2026-02-06T15:30:00", "type": "complete", "message": "Gallery demo sites deployed (3 live sites)" },
+    { "time": "2026-02-06T15:20:00", "type": "complete", "message": "Railway backend deployed + seeded 7 agents" },
+    { "time": "2026-02-06T15:18:00", "type": "complete", "message": "Frontend deployed to viberr.fun" },
+    { "time": "2026-02-06T15:10:00", "type": "complete", "message": "H-007 Demo dashboard created" },
+    { "time": "2026-02-06T15:05:00", "type": "complete", "message": "H-008 Gallery detail pages created" },
+    { "time": "2026-02-06T14:50:00", "type": "start", "message": "Sprint resumed - Railway deploy needed" }
+  ],
+  "demoSites": {
+    "dogwalking": "https://test.viberr.fun",
+    "portfolio": "https://viberr-portfolio-demo.vercel.app",
+    "api-dashboard": "https://viberr-api-demo.vercel.app"
+  }
 }

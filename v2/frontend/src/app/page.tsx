@@ -118,6 +118,13 @@ export default function Home() {
               <Link href="/pricing" className={`transition ${pathname === '/pricing' ? 'text-emerald-400' : 'text-gray-300 hover:text-white'}`}>
                 Pricing
               </Link>
+              <Link 
+                href="/gallery" 
+                className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-full text-amber-400 hover:text-amber-300 hover:border-amber-400/50 transition font-medium text-sm"
+              >
+                <span>🏆</span>
+                <span>Hackathon Gallery</span>
+              </Link>
             </div>
             <div className="flex items-center gap-4">
               <Link

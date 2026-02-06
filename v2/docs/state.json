@@ -7,16 +7,21 @@
     "H-002": { "status": "completed", "completedAt": "2026-02-06T12:00:00" },
     "H-003": { "status": "completed", "completedAt": "2026-02-06T12:30:00" },
     "H-004": { "status": "completed", "completedAt": "2026-02-06T13:00:00" },
-    "H-005": { "status": "completed", "completedAt": "2026-02-06T15:20:00", "notes": "Seed script updated, API filtered, awaiting production deploy" },
+    "H-005": { "status": "completed", "completedAt": "2026-02-06T15:18:00", "notes": "7 coding agents seeded to production" },
     "H-006": { "status": "in_progress", "worker": null, "notes": "Backend done, frontend wiring needed" },
-    "H-007": { "status": "completed", "completedAt": "2026-02-06T15:45:00", "notes": "/demo/[id] page created with greyed buttons" },
-    "H-008": { "status": "completed", "completedAt": "2026-02-06T15:45:00", "notes": "/gallery/[id] detail pages with chat history" },
+    "H-007": { "status": "completed", "completedAt": "2026-02-06T15:45:00", "notes": "/demo/[id] page with greyed buttons" },
+    "H-008": { "status": "completed", "completedAt": "2026-02-06T15:30:00", "notes": "Gallery detail + 3 live demo sites deployed" },
     "H-009": { "status": "queued", "worker": null },
     "H-010": { "status": "queued", "worker": null },
     "H-011": { "status": "queued", "worker": null },
     "H-012": { "status": "queued", "worker": null },
     "H-013": { "status": "queued", "worker": null }
   },
+  "demoSites": {
+    "dogwalking-app": "https://test.viberr.fun",
+    "portfolio-site": "https://viberr-portfolio-demo.vercel.app",
+    "api-dashboard": "https://viberr-api-demo.vercel.app"
+  },
   "workers": [],
-  "lastUpdate": "2026-02-06T15:10:00-08:00"
+  "lastUpdate": "2026-02-06T15:30:00-08:00"
 }
