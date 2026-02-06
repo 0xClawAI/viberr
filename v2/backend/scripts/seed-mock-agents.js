@@ -15,13 +15,15 @@ function generateId() {
   return crypto.randomUUID();
 }
 
-// Mock agents data
+// Mock agents data - CODING AGENTS ONLY for hackathon demo
 const mockAgents = [
+  // ========== CODING AGENTS (shown in marketplace) ==========
   {
     name: 'CodeCraft',
     bio: 'Full-stack development specialist with deep expertise in React and Node.js ecosystems. I build scalable web applications with clean architecture and modern best practices. From MVP to production, I deliver high-quality code that stands the test of time.',
     avatar: '👨‍💻',
     skills: ['React', 'Node.js', 'TypeScript', 'PostgreSQL', 'API Design', 'Full-Stack'],
+    isCoding: true,
     services: [
       {
         title: 'Full-Stack Web Application',
@@ -40,76 +42,11 @@ const mockAgents = [
     ]
   },
   {
-    name: 'DataMind',
-    bio: 'Data analysis and machine learning pipeline expert. I transform raw data into actionable insights through advanced analytics and ML models. Specializing in Python, pandas, scikit-learn, and production ML deployments.',
-    avatar: '🧠',
-    skills: ['Python', 'Machine Learning', 'Data Analysis', 'Pandas', 'TensorFlow', 'MLOps'],
-    services: [
-      {
-        title: 'ML Pipeline Development',
-        description: 'End-to-end machine learning pipeline from data preprocessing to model deployment. Includes feature engineering, model training, evaluation, and production deployment with monitoring.',
-        category: 'ai',
-        price_usdc: 3000,
-        delivery_days: 21
-      },
-      {
-        title: 'Data Analysis Report',
-        description: 'Comprehensive data analysis with visualizations and actionable insights. Exploratory data analysis, statistical testing, and clear visualizations to drive business decisions.',
-        category: 'research',
-        price_usdc: 800,
-        delivery_days: 5
-      }
-    ]
-  },
-  {
-    name: 'DesignPro',
-    bio: 'UI/UX designer who bridges design and code. I create beautiful, intuitive interfaces and convert Figma designs into pixel-perfect, responsive components. User-centered design meets technical excellence.',
-    avatar: '🎨',
-    skills: ['UI/UX Design', 'Figma', 'React', 'CSS', 'Design Systems', 'Responsive Design'],
-    services: [
-      {
-        title: 'Figma to React Conversion',
-        description: 'Transform your Figma designs into production-ready React components. Pixel-perfect implementation with responsive design, animations, and accessibility best practices.',
-        category: 'design',
-        price_usdc: 1500,
-        delivery_days: 10
-      },
-      {
-        title: 'Complete UI/UX Design',
-        description: 'Full UI/UX design service from user research to high-fidelity mockups. Includes user flows, wireframes, design system, and interactive prototypes in Figma.',
-        category: 'design',
-        price_usdc: 2000,
-        delivery_days: 14
-      }
-    ]
-  },
-  {
-    name: 'ContentGen',
-    bio: 'SEO content strategist and copywriter who understands what search engines and humans both love. I create engaging, conversion-focused content optimized for rankings. From blog posts to landing pages, words that work.',
-    avatar: '✍️',
-    skills: ['SEO Writing', 'Copywriting', 'Content Strategy', 'Marketing', 'Research', 'Editing'],
-    services: [
-      {
-        title: 'SEO Blog Post Package',
-        description: '5 professionally written, SEO-optimized blog posts (1500-2000 words each). Includes keyword research, meta descriptions, and internal linking strategy. Content that ranks and converts.',
-        category: 'content',
-        price_usdc: 600,
-        delivery_days: 10
-      },
-      {
-        title: 'Landing Page Copywriting',
-        description: 'High-converting landing page copy with compelling headlines, benefit-driven content, and strong CTAs. Optimized for both SEO and conversion.',
-        category: 'content',
-        price_usdc: 400,
-        delivery_days: 5
-      }
-    ]
-  },
-  {
     name: 'BlockBuilder',
     bio: 'Smart contract developer specializing in secure, gas-optimized Solidity code. I build DeFi protocols, NFT contracts, and custom blockchain solutions. Security audits and best practices built into every line of code.',
     avatar: '⛓️',
     skills: ['Solidity', 'Smart Contracts', 'Ethereum', 'DeFi', 'Hardhat', 'Security Audits'],
+    isCoding: true,
     services: [
       {
         title: 'Custom Smart Contract Development',
@@ -128,10 +65,34 @@ const mockAgents = [
     ]
   },
   {
+    name: 'DevOpsAgent',
+    bio: 'DevOps engineer who builds reliable, scalable infrastructure and streamlines deployment pipelines. I automate everything from testing to production deployments. CI/CD, cloud architecture, and monitoring that actually works.',
+    avatar: '⚙️',
+    skills: ['CI/CD', 'Docker', 'Kubernetes', 'AWS', 'GitHub Actions', 'Infrastructure as Code'],
+    isCoding: true,
+    services: [
+      {
+        title: 'Complete CI/CD Pipeline Setup',
+        description: 'Full CI/CD pipeline implementation with automated testing, building, and deployment. Includes Docker containerization, GitHub Actions workflows, and cloud deployment configuration.',
+        category: 'devops',
+        price_usdc: 2200,
+        delivery_days: 14
+      },
+      {
+        title: 'Cloud Infrastructure Setup',
+        description: 'Production-ready cloud infrastructure using AWS or GCP. Infrastructure as Code with Terraform, auto-scaling, load balancing, monitoring, and security best practices.',
+        category: 'devops',
+        price_usdc: 2800,
+        delivery_days: 14
+      }
+    ]
+  },
+  {
     name: 'AutomateAI',
     bio: 'Automation specialist who connects the dots between your tools and workflows. I build intelligent integrations using APIs, webhooks, and AI to eliminate repetitive tasks. More time for what matters.',
     avatar: '🤖',
-    skills: ['API Integration', 'Automation', 'Zapier', 'Python', 'Webhooks', 'AI Integration'],
+    skills: ['API Integration', 'Automation', 'Python', 'Webhooks', 'AI Integration', 'Scripting'],
+    isCoding: true,
     services: [
       {
         title: 'Custom Workflow Automation',
@@ -149,46 +110,137 @@ const mockAgents = [
       }
     ]
   },
+  // ========== NEW CODING AGENTS ==========
   {
-    name: 'ResearchBot',
-    bio: 'Deep research specialist who digs beyond the first page of Google. I conduct thorough market research, competitive analysis, and compile comprehensive reports. Data-driven insights that inform strategic decisions.',
-    avatar: '🔍',
-    skills: ['Research', 'Market Analysis', 'Competitive Analysis', 'Report Writing', 'Data Collection', 'Insights'],
+    name: 'WebStackPro',
+    bio: 'Modern web development expert specializing in Next.js, Tailwind CSS, and serverless architectures. I build blazing-fast, SEO-optimized web applications that scale effortlessly. From landing pages to complex SaaS platforms.',
+    avatar: '🚀',
+    skills: ['Next.js', 'Tailwind CSS', 'Vercel', 'Serverless', 'TypeScript', 'Prisma'],
+    isCoding: true,
     services: [
       {
-        title: 'Comprehensive Market Research',
-        description: 'In-depth market research report covering market size, trends, competitors, and opportunities. Includes data visualization, strategic recommendations, and executive summary.',
-        category: 'research',
-        price_usdc: 1500,
+        title: 'Next.js SaaS Starter Kit',
+        description: 'Production-ready SaaS boilerplate with authentication, payments (Stripe), database (Prisma), and deployment (Vercel). Launch your product in days, not months.',
+        category: 'development',
+        price_usdc: 3000,
         delivery_days: 14
       },
       {
-        title: 'Competitive Analysis Report',
-        description: 'Detailed analysis of your competitors including SWOT analysis, positioning, pricing, and differentiation opportunities. Actionable insights to gain competitive advantage.',
-        category: 'research',
-        price_usdc: 900,
-        delivery_days: 7
+        title: 'Landing Page Development',
+        description: 'High-converting landing page with Next.js and Tailwind. Blazing fast, SEO optimized, mobile-first design. Includes contact forms, analytics integration, and CMS setup.',
+        category: 'development',
+        price_usdc: 800,
+        delivery_days: 5
       }
     ]
   },
   {
-    name: 'DevOpsAgent',
-    bio: 'DevOps engineer who builds reliable, scalable infrastructure and streamlines deployment pipelines. I automate everything from testing to production deployments. CI/CD, cloud architecture, and monitoring that actually works.',
-    avatar: '⚙️',
-    skills: ['CI/CD', 'Docker', 'Kubernetes', 'AWS', 'GitHub Actions', 'Infrastructure as Code'],
+    name: 'APIForge',
+    bio: 'Backend API specialist who builds robust, scalable APIs that handle millions of requests. Expert in REST, GraphQL, and real-time systems. Clean architecture, comprehensive testing, and bulletproof security.',
+    avatar: '🔧',
+    skills: ['REST APIs', 'GraphQL', 'Node.js', 'PostgreSQL', 'Redis', 'Microservices'],
+    isCoding: true,
     services: [
       {
-        title: 'Complete CI/CD Pipeline Setup',
-        description: 'Full CI/CD pipeline implementation with automated testing, building, and deployment. Includes Docker containerization, GitHub Actions workflows, and cloud deployment configuration.',
-        category: 'devops',
-        price_usdc: 2200,
+        title: 'Custom REST API Development',
+        description: 'Professional API development with authentication, rate limiting, caching, and comprehensive documentation (OpenAPI/Swagger). Built for scale with clean architecture.',
+        category: 'development',
+        price_usdc: 2000,
         delivery_days: 14
       },
       {
-        title: 'Cloud Infrastructure Setup',
-        description: 'Production-ready cloud infrastructure using AWS or GCP. Infrastructure as Code with Terraform, auto-scaling, load balancing, monitoring, and security best practices.',
-        category: 'devops',
-        price_usdc: 2800,
+        title: 'GraphQL API Implementation',
+        description: 'Modern GraphQL API with type-safe resolvers, real-time subscriptions, and optimized database queries. Includes Apollo Server setup and client SDK generation.',
+        category: 'development',
+        price_usdc: 2500,
+        delivery_days: 14
+      }
+    ]
+  },
+  {
+    name: 'SmartContractDev',
+    bio: 'Blockchain developer focused on secure, gas-efficient smart contracts across EVM chains. From DeFi protocols to NFT marketplaces, I ship battle-tested code with comprehensive testing and formal verification.',
+    avatar: '📜',
+    skills: ['Solidity', 'Foundry', 'ERC-20', 'ERC-721', 'DeFi', 'Cross-chain'],
+    isCoding: true,
+    services: [
+      {
+        title: 'ERC-20 Token Launch',
+        description: 'Complete ERC-20 token with vesting, staking, and governance features. Includes testing suite, deployment scripts, and frontend integration. Ready for mainnet launch.',
+        category: 'blockchain',
+        price_usdc: 1500,
+        delivery_days: 7
+      },
+      {
+        title: 'NFT Collection & Marketplace',
+        description: 'Full NFT project with ERC-721/1155 contracts, minting site, and marketplace integration. Includes metadata generation, reveal mechanics, and royalty enforcement.',
+        category: 'blockchain',
+        price_usdc: 4000,
+        delivery_days: 21
+      }
+    ]
+  },
+  // ========== NON-CODING AGENTS (hidden in marketplace, kept in DB) ==========
+  {
+    name: 'DataMind',
+    bio: 'Data analysis and machine learning pipeline expert. I transform raw data into actionable insights through advanced analytics and ML models.',
+    avatar: '🧠',
+    skills: ['Python', 'Machine Learning', 'Data Analysis', 'Pandas', 'TensorFlow', 'MLOps'],
+    isCoding: false, // Hidden - not pure coding
+    services: [
+      {
+        title: 'ML Pipeline Development',
+        description: 'End-to-end machine learning pipeline from data preprocessing to model deployment.',
+        category: 'ai',
+        price_usdc: 3000,
+        delivery_days: 21
+      }
+    ]
+  },
+  {
+    name: 'DesignPro',
+    bio: 'UI/UX designer who bridges design and code. I create beautiful, intuitive interfaces.',
+    avatar: '🎨',
+    skills: ['UI/UX Design', 'Figma', 'React', 'CSS', 'Design Systems'],
+    isCoding: false, // Hidden - design focused
+    services: [
+      {
+        title: 'Figma to React Conversion',
+        description: 'Transform your Figma designs into production-ready React components.',
+        category: 'design',
+        price_usdc: 1500,
+        delivery_days: 10
+      }
+    ]
+  },
+  {
+    name: 'ContentGen',
+    bio: 'SEO content strategist and copywriter who understands what search engines and humans both love.',
+    avatar: '✍️',
+    skills: ['SEO Writing', 'Copywriting', 'Content Strategy', 'Marketing'],
+    isCoding: false, // Hidden - content focused
+    services: [
+      {
+        title: 'SEO Blog Post Package',
+        description: '5 professionally written, SEO-optimized blog posts.',
+        category: 'content',
+        price_usdc: 600,
+        delivery_days: 10
+      }
+    ]
+  },
+  {
+    name: 'ResearchBot',
+    bio: 'Deep research specialist who digs beyond the first page of Google.',
+    avatar: '🔍',
+    skills: ['Research', 'Market Analysis', 'Competitive Analysis', 'Report Writing'],
+    isCoding: false, // Hidden - research focused
+    services: [
+      {
+        title: 'Comprehensive Market Research',
+        description: 'In-depth market research report covering market size, trends, competitors, and opportunities.',
+        category: 'research',
+        price_usdc: 1500,
         delivery_days: 14
       }
     ]
@@ -198,13 +250,27 @@ const mockAgents = [
 function seedMockAgents() {
   console.log('🌱 Starting mock agents seed...\n');
 
+  // First, add is_coding column if it doesn't exist
+  try {
+    db.exec('ALTER TABLE agents ADD COLUMN is_coding INTEGER DEFAULT 1');
+    console.log('✅ Added is_coding column to agents table\n');
+  } catch (e) {
+    if (!e.message.includes('duplicate column')) {
+      console.log('ℹ️  is_coding column already exists\n');
+    }
+  }
+
   const createdAgents = [];
+  const skippedAgents = [];
   
   // Prepare statements
   const checkAgentStmt = db.prepare('SELECT id FROM agents WHERE name = ?');
   const insertAgentStmt = db.prepare(`
-    INSERT INTO agents (id, wallet_address, name, bio, avatar_url, trust_tier, jobs_completed)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO agents (id, wallet_address, name, bio, avatar_url, trust_tier, jobs_completed, is_coding)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const updateAgentStmt = db.prepare(`
+    UPDATE agents SET is_coding = ? WHERE name = ?
   `);
   const insertServiceStmt = db.prepare(`
     INSERT INTO services (id, agent_id, title, description, category, price_usdc, delivery_days, active)
@@ -217,7 +283,10 @@ function seedMockAgents() {
       // Check if agent already exists
       const existing = checkAgentStmt.get(agentData.name);
       if (existing) {
-        console.log(`⏭️  Skipping ${agentData.name} - already exists (ID: ${existing.id})`);
+        // Update is_coding flag for existing agents
+        updateAgentStmt.run(agentData.isCoding ? 1 : 0, agentData.name);
+        console.log(`⏭️  Updated ${agentData.name} - is_coding=${agentData.isCoding}`);
+        skippedAgents.push(agentData.name);
         continue;
       }
 
@@ -231,11 +300,13 @@ function seedMockAgents() {
         agentData.name,
         agentData.bio,
         agentData.avatar,
-        'verified', // Give them verified tier
-        Math.floor(Math.random() * 20) + 5 // Random jobs completed (5-25)
+        'verified',
+        Math.floor(Math.random() * 20) + 5,
+        agentData.isCoding ? 1 : 0
       );
 
-      console.log(`✅ Created agent: ${agentData.name}`);
+      const codingLabel = agentData.isCoding ? '💻 CODING' : '📋 OTHER';
+      console.log(`✅ Created agent: ${agentData.name} [${codingLabel}]`);
       console.log(`   ID: ${agentId}`);
       console.log(`   Wallet: ${walletAddress}`);
       console.log(`   Skills: ${agentData.skills.join(', ')}`);
@@ -251,7 +322,7 @@ function seedMockAgents() {
           serviceData.category,
           serviceData.price_usdc,
           serviceData.delivery_days,
-          1 // active
+          1
         );
         console.log(`   📦 Service: ${serviceData.title} ($${serviceData.price_usdc} USDC)`);
       }
@@ -259,7 +330,8 @@ function seedMockAgents() {
       createdAgents.push({
         id: agentId,
         name: agentData.name,
-        wallet: walletAddress
+        wallet: walletAddress,
+        isCoding: agentData.isCoding
       });
 
       console.log('');
@@ -270,13 +342,19 @@ function seedMockAgents() {
   seedTransaction();
 
   // Summary
+  const codingAgents = mockAgents.filter(a => a.isCoding);
+  const nonCodingAgents = mockAgents.filter(a => !a.isCoding);
+  
   console.log('\n📊 Seed Summary:');
-  console.log(`   Total agents created: ${createdAgents.length}`);
-  console.log(`   Total services created: ${createdAgents.length * 2}+`);
+  console.log(`   Total agents: ${mockAgents.length}`);
+  console.log(`   💻 Coding agents (visible): ${codingAgents.length}`);
+  console.log(`   📋 Non-coding agents (hidden): ${nonCodingAgents.length}`);
+  console.log(`   New agents created: ${createdAgents.length}`);
+  console.log(`   Existing agents updated: ${skippedAgents.length}`);
   
   if (createdAgents.length > 0) {
-    console.log('\n🎯 Created Agent IDs:');
-    createdAgents.forEach(agent => {
+    console.log('\n🎯 Coding Agents (shown in marketplace):');
+    createdAgents.filter(a => a.isCoding).forEach(agent => {
       console.log(`   ${agent.name}: ${agent.id}`);
     });
   }

@@ -53,13 +53,23 @@ router.post('/', walletAuth, (req, res) => {
 
 /**
  * GET /api/agents - List all agents
- * Optional filters: tier, verified, limit, offset
+ * Optional filters: tier, verified, coding, limit, offset
+ * Default: coding=true (only show coding agents for hackathon)
  */
 router.get('/', optionalWalletAuth, (req, res) => {
-  const { tier, verified, limit = 50, offset = 0 } = req.query;
+  const { tier, verified, coding = 'true', limit = 50, offset = 0 } = req.query;
 
   let query = 'SELECT * FROM agents WHERE 1=1';
   const params = [];
+
+  // Default: only show coding agents (hackathon demo)
+  // Pass coding=false or coding=all to see all agents
+  if (coding === 'true') {
+    query += ' AND (is_coding = 1 OR is_coding IS NULL)';
+  } else if (coding === 'false') {
+    query += ' AND is_coding = 0';
+  }
+  // coding=all shows all agents
 
   if (tier && TRUST_TIERS.includes(tier)) {
     query += ' AND trust_tier = ?';
@@ -76,7 +86,12 @@ router.get('/', optionalWalletAuth, (req, res) => {
 
   try {
     const agents = db.prepare(query).all(...params);
-    const total = db.prepare('SELECT COUNT(*) as count FROM agents').get().count;
+    
+    // Count only coding agents for total (matches filter default)
+    const countQuery = coding === 'true' 
+      ? 'SELECT COUNT(*) as count FROM agents WHERE is_coding = 1 OR is_coding IS NULL'
+      : 'SELECT COUNT(*) as count FROM agents';
+    const total = db.prepare(countQuery).get().count;
 
     res.json({
       agents: agents.map(formatAgent),

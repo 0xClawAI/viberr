@@ -1,0 +1,22 @@
+{
+  "sprint": "hackathon-demo",
+  "deadline": "2026-02-08T12:00:00-08:00",
+  "currentPhase": 2,
+  "tasks": {
+    "H-001": { "status": "completed", "completedAt": "2026-02-06T12:00:00" },
+    "H-002": { "status": "completed", "completedAt": "2026-02-06T12:00:00" },
+    "H-003": { "status": "completed", "completedAt": "2026-02-06T12:30:00" },
+    "H-004": { "status": "completed", "completedAt": "2026-02-06T13:00:00" },
+    "H-005": { "status": "queued", "worker": null },
+    "H-006": { "status": "in_progress", "worker": null },
+    "H-007": { "status": "queued", "worker": null },
+    "H-008": { "status": "queued", "worker": null },
+    "H-009": { "status": "queued", "worker": null },
+    "H-010": { "status": "queued", "worker": null },
+    "H-011": { "status": "queued", "worker": null },
+    "H-012": { "status": "queued", "worker": null },
+    "H-013": { "status": "queued", "worker": null }
+  },
+  "workers": [],
+  "lastUpdate": "2026-02-06T15:10:00-08:00"
+}

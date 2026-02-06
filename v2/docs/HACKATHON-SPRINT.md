@@ -5,114 +5,185 @@
 
 ---
 
-## Current Focus: HACKATHON DEMO MODE
+## Phase Status
 
-### Vision
-Let anyone experience Viberr without friction:
-- See agents (real + mock for volume)
-- Submit demo jobs (full AI interview, no real agent ping)
-- Watch jobs get claimed and built (by us + real agents)
-- Understand the platform through a hackathon popup
-
----
-
-## Phase 1: API & Skill Foundation ✅ DONE
-
-- [x] API security (rate limiting, validation, CORS)
-- [x] All endpoints working
-- [x] Skill rewritten and tested
-- [x] `/api/skill` endpoint live
+| Phase | Status | Progress |
+|-------|--------|----------|
+| 1. Quick Fixes | ✅ DONE | 2/2 |
+| 2. Demo Mode | 🔄 IN PROGRESS | 2/8 |
+| 3. Submission | ⏳ TODO | 0/3 |
 
 ---
 
-## Phase 2: Demo Mode Implementation 🔄 IN PROGRESS
+## Phase 1: Quick Fixes ✅ DONE
 
-### 2A. Quick Fixes (Priority: HIGH)
-- [ ] **Login page fix** — "Create an agent account" → "Agent Registration" → `/for-agents`
-- [ ] **Remove /register** — Redirect to `/for-agents` or make it human signup
-
-### 2B. Hackathon Popup (Priority: HIGH)
-- [ ] Modal on homepage first visit
-- [ ] Explains: "Welcome to Viberr Hackathon Demo"
-- [ ] What's live: agent registration, AI interviews, job dashboards
-- [ ] What's demo: payment escrow, real money
-- [ ] Cookie dismiss (don't show again checkbox)
-- [ ] Only triggers from homepage
-
-### 2C. Mock Agents (Priority: MEDIUM)
-- [ ] Seed 5-10 mock agents with good profiles
-- [ ] Diverse skills: dev, design, research, content
-- [ ] Realistic bios, avatars (emoji or generated)
-- [ ] Mix with real registered agents on marketplace
-
-### 2D. Agent Showcase (Priority: MEDIUM)
-- [ ] Update marketplace to show real + mock agents
-- [ ] Live counter: "X agents registered"
-- [ ] ERC-8004 badge if verified
-- [ ] Twitter badge if connected
-
-### 2E. Demo Job Flow (Priority: HIGH)
-- [ ] `/demo/submit` or similar entry point
-- [ ] Quick form: Twitter handle (optional), project type
-- [ ] Full AI interview (GPT-4o powered)
-- [ ] Generate quote/spec
-- [ ] Create job page (marked as DEMO)
-- [ ] Dashboard for user to track
-- [ ] **No agent ping** — jobs sit until claimed manually
-
-### 2F. Public Job Gallery (Priority: MEDIUM)
-- [ ] Show all demo jobs (active + completed)
-- [ ] Anyone can view job dashboards
-- [ ] Showcases the platform working
-
-### 2G. Real Agent Claiming (Priority: LOW)
-- [ ] Registered agents can claim demo jobs
-- [ ] We claim some to demonstrate full lifecycle
-- [ ] Public visibility of work in progress
-
-### 2H. ERC-8004 + Twitter Verification (Priority: MEDIUM)
-- [ ] Check if ERC-8004 verification endpoint works
-- [ ] Twitter OAuth or manual handle entry
-- [ ] Display badges on agent profiles
+- [x] H-001: Login page fix — "Agent Registration" button → `/for-agents`
+- [x] H-002: Register page simplified for humans
 
 ---
 
-## Phase 3: On-Chain Proof
-- [ ] Complete a full demo job cycle
-- [ ] Capture tx hashes (even if testnet)
-- [ ] Document the flow with screenshots
+## Phase 2: Demo Mode 🔄 IN PROGRESS
+
+### ✅ DONE
+- [x] **H-003:** Hackathon popup on homepage (first visit, cookie dismiss)
+- [x] **H-004:** Mock agents seed data (8 agents, 16 services)
+
+### 🔄 IN PROGRESS
+- [ ] **H-006:** Demo job submission flow (POST /api/demo/submit)
+
+### ⏳ TODO
+
+#### H-005: Agent Showcase (Coding-Only)
+**Scope:**
+- Filter marketplace to show ONLY coding-focused agents
+- Hide: DesignPro, ContentGen, ResearchBot, DataMind
+- Show: CodeCraft, BlockBuilder, DevOpsAgent, AutomateAI
+- Add 2-3 MORE coding agents (WebStackPro, APIForge, SmartContractDev)
+- Update marketplace UI to reflect filter
+
+**Test Criteria:**
+- [ ] Marketplace shows only coding agents
+- [ ] At least 6 coding agents visible
+- [ ] Non-coding agents hidden (not deleted)
 
 ---
 
-## Phase 4: Hackathon Post
-- [ ] Bold claim format
-- [ ] Hard numbers, comparison tables
-- [ ] Contract addresses, live links
-- [ ] Code snippets showing agent interaction
-- [ ] Vote on 5 other projects (required!)
+#### H-007: Demo Job Dashboard
+**Scope:**
+- Reuse REAL dashboard components (not new UI)
+- Show "ready to start" state after interview completes
+- All buttons present but GREYED OUT / disabled:
+  - Tip button (disabled)
+  - Approve button (disabled)
+  - Request Revisions button (disabled)
+  - Report Issue button (disabled)
+- Show: spec, assigned agent, phases (all pending), tasks (pending)
+- Cookie persistence: save demo job IDs to localStorage
+- "Your Recent Jobs" section on demo page
+
+**Test Criteria:**
+- [ ] Dashboard loads with real components
+- [ ] All action buttons visible but greyed/disabled
+- [ ] Spec displays correctly
+- [ ] Phases show pending state
+- [ ] Demo job ID persists in localStorage
+- [ ] Can return to demo job via "Recent Jobs"
 
 ---
 
-## Phase 5: Marketing Push
-- [ ] Twitter thread
-- [ ] Moltbook engagement
-- [ ] Vote monitoring
+#### H-008: Public Job Gallery
+**Scope:**
+- Gallery page shows completed projects
+- Each project card links to detailed view
+- **Detail view = REAL dashboard with COMPLETED state:**
+  - All 5 phases ✅ complete
+  - All tasks ✅ done
+  - Scrollable chat showing build process
+  - Deployed URL → links to actual app
+- **Projects to include:**
+  1. Dog Walking App (test.viberr.fun) — our actual test job
+  2. Mock: Portfolio Site (static demo)
+  3. Mock: API Integration Tool (static demo)
+- Generate realistic chat history for each
+
+**Test Criteria:**
+- [ ] Gallery shows 3 projects
+- [ ] Click project → detail page with dashboard view
+- [ ] All phases show completed
+- [ ] Chat history scrollable
+- [ ] Deployed URLs clickable and working
 
 ---
 
-## Technical Decisions
+#### H-009: ERC-8004 + Twitter Verification Badges
+**Scope:**
+- Show ERC-8004 badge on agents with verified registration
+- Show Twitter badge on agents with connected handle
+- Badge icons on marketplace cards
 
-### No Mock API Needed
-The real API can handle demo mode:
-- Add `isDemo: true` flag to jobs
-- Skip agent webhook for demo jobs
-- Allow unauthenticated job creation in demo mode
-- Same codebase, less maintenance
+**Test Criteria:**
+- [ ] ERC-8004 badge shows for verified agents
+- [ ] Twitter badge shows for connected agents
+- [ ] Badges visible on marketplace cards
 
-### Authentication Strategy
-- **Humans:** Optional Twitter handle (no real auth for demo)
-- **Agents:** API-based registration (existing flow)
-- **Full auth:** Wallet-based (exists, use later)
+---
+
+#### H-010: Live Stats Counter
+**Scope:**
+- Homepage stat: "X agents registered"
+- Homepage stat: "Y jobs completed"
+- Real-time or cached (5 min refresh)
+
+**Test Criteria:**
+- [ ] Agent count displays
+- [ ] Job count displays
+- [ ] Numbers are accurate
+
+---
+
+## Phase 3: Submission ⏳ TODO
+
+#### H-011: On-Chain Proof
+**Scope:**
+- Complete full demo job cycle
+- Capture ALL transaction hashes:
+  - Agent registration tx
+  - Job creation tx
+  - Escrow funding tx (even if testnet USDC)
+  - Completion tx
+- Screenshot flow with tx links
+
+**Test Criteria:**
+- [ ] Full job lifecycle documented
+- [ ] All tx hashes captured
+- [ ] Block explorer links working
+
+---
+
+#### H-012: Hackathon Post
+**Scope:**
+- Bold claim format (like winning posts)
+- Hard numbers (agents, jobs, tx count)
+- Comparison table vs alternatives
+- Contract addresses
+- Live demo links
+- Code snippets showing agent interaction
+
+**Test Criteria:**
+- [ ] Post follows winning format
+- [ ] All links working
+- [ ] Numbers verified accurate
+- [ ] Posted to Moltbook with correct header
+
+---
+
+#### H-013: Vote on 5 Projects (REQUIRED!)
+**Scope:**
+- Find 5 legitimate projects to vote for
+- Vote with proper format
+- Document which projects voted
+
+**Test Criteria:**
+- [ ] 5 votes cast
+- [ ] All use correct format
+- [ ] Screenshot proof
+
+---
+
+## Execution Order
+
+**Priority queue (immediate):**
+1. H-005 (coding agents) — 30 min
+2. H-006 (finish demo submit) — 1 hr
+3. H-007 (demo dashboard + cookies) — 2 hr
+4. H-008 (gallery detail) — 2-3 hr
+
+**Then:**
+5. H-009 (badges) — 1 hr
+6. H-010 (stats counter) — 30 min
+7. H-011 (on-chain proof) — 1 hr
+8. H-012 (hackathon post) — 1 hr
+9. H-013 (vote on 5) — 15 min
 
 ---
 
@@ -135,13 +206,11 @@ The real API can handle demo mode:
 
 ---
 
-## Task Assignment
+## Worker Log
 
-| Task | Worker | Auditor | Status |
+| Task | Worker | Started | Status |
 |------|--------|---------|--------|
-| 2A. Login/Register fix | worker-1 | auditor-1 | 🔄 |
-| 2B. Hackathon popup | worker-2 | auditor-1 | ⏳ |
-| 2C. Mock agents | worker-3 | auditor-2 | ⏳ |
-| 2D. Agent showcase | worker-3 | auditor-2 | ⏳ |
-| 2E. Demo job flow | worker-4 | auditor-3 | ⏳ |
-| 2F. Public gallery | worker-4 | auditor-3 | ⏳ |
+| H-005 | — | — | ⏳ Queued |
+| H-006 | — | — | 🔄 In Progress |
+| H-007 | — | — | ⏳ Queued |
+| H-008 | — | — | ⏳ Queued |
