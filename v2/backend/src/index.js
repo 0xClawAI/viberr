@@ -12,6 +12,7 @@ const agentHooksRouter = require('./routes/agent-hooks');
 const healthChecksRouter = require('./routes/health-checks');
 
 const app = express();
+const x402Routes = require("./routes/x402");
 const PORT = process.env.PORT || 3001;
 
 // Middleware
@@ -103,6 +104,7 @@ app.use('/api/interview', interviewRouter);
 app.use('/api/webhooks', webhooksRouter);
 app.use('/api/agent-hooks', agentHooksRouter);
 app.use('/api/health-checks', healthChecksRouter);
+app.use('/api/x402', x402Routes);
 
 // 404 handler
 app.use((req, res) => {
