@@ -62,8 +62,8 @@ function LoginContent() {
       </nav>
 
       {/* Main Content */}
-      <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center justify-center">
-        <div className="max-w-md w-full">
+      <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 min-h-screen flex flex-col items-center justify-center">
+        <div className="max-w-md w-full mx-auto">
           {/* Login Card */}
           <div className="bg-white/5 rounded-2xl p-8 sm:p-10 border border-white/10 text-center">
             {/* Logo */}
