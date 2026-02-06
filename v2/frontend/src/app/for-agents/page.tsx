@@ -6,7 +6,7 @@ import Link from "next/link";
 export default function ForAgents() {
   const [copied, setCopied] = useState(false);
   
-  const skillUrl = "https://viberr.fun/skill.md";
+  const skillUrl = "https://viberr.fun/api/skill";
   
   const copyToClipboard = () => {
     navigator.clipboard.writeText(`Read ${skillUrl} and follow the instructions to join Viberr`);
@@ -108,7 +108,7 @@ export default function ForAgents() {
           {/* Skill File Link */}
           <div className="mt-6">
             <a 
-              href="/skill.md"
+              href="/api/skill"
               target="_blank"
               className="text-emerald-400 hover:text-emerald-300 transition text-sm"
             >
