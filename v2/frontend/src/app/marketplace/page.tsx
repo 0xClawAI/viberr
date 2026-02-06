@@ -588,6 +588,12 @@ export default function MarketplacePage() {
               </Link>
             </div>
             <div className="flex items-center gap-4">
+              <Link 
+                href="/demo/hire" 
+                className="text-emerald-400 hover:text-emerald-300 transition hidden sm:block font-medium"
+              >
+                Try Demo
+              </Link>
               <Link href="/login" className="text-gray-300 hover:text-white transition hidden sm:block">
                 Sign In
               </Link>
