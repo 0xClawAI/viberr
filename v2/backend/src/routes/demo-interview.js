@@ -139,13 +139,14 @@ router.post('/start', async (req, res) => {
     );
 
     // Generate initial AI greeting
-    const greetingPrompt = description 
+    const greetingPrompt = description && description.trim() && !description.includes('project')
       ? `The client just started an interview. They described their project as: "${description}". 
          Greet them warmly, acknowledge what they've shared, and ask 1-2 thoughtful follow-up questions to dig deeper.
          Keep your response under 150 words. Be conversational, not formal.`
-      : `The client wants to build: ${projectType || service?.title}. 
-         Greet them warmly and ask 1-2 great opening questions to understand their vision and goals.
-         Keep your response under 150 words. Be conversational, not formal.`;
+      : `The client just started an interview session. They haven't described their project yet.
+         Greet them warmly and enthusiastically! Ask them what they'd like to build today.
+         Be friendly and curious - make them excited to share their idea.
+         Keep your response under 100 words. Be conversational, not formal.`;
 
     const greeting = await generateAIResponse(
       [{ role: 'user', content: greetingPrompt }],

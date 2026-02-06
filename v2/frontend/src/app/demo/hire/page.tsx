@@ -27,7 +27,6 @@ export default function DemoHirePage() {
   // State
   const [step, setStep] = useState<"select" | "interview" | "spec">("select");
   const [selectedAgent, setSelectedAgent] = useState<typeof DEMO_AGENTS[0] | null>(null);
-  const [projectType, setProjectType] = useState("");
   const [twitterHandle, setTwitterHandle] = useState("");
   const [interviewId, setInterviewId] = useState<string | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -46,7 +45,7 @@ export default function DemoHirePage() {
 
   // Start interview
   const startInterview = async () => {
-    if (!selectedAgent || !projectType.trim()) return;
+    if (!selectedAgent) return;
     
     setIsLoading(true);
     try {
@@ -55,9 +54,8 @@ export default function DemoHirePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agentId: selectedAgent.id,
-          projectType: projectType.trim(),
+          projectType: `${selectedAgent.specialty} project`,
           twitterHandle: twitterHandle.trim() || null,
-          description: projectType.trim(),
         }),
       });
 
@@ -71,7 +69,7 @@ export default function DemoHirePage() {
       
       // Save to recent demos
       const recent = JSON.parse(localStorage.getItem("viberr_recent_demos") || "[]");
-      recent.unshift({ id: data.jobId, title: projectType.trim(), createdAt: new Date().toISOString() });
+      recent.unshift({ id: data.jobId, title: `${selectedAgent.name} project`, createdAt: new Date().toISOString() });
       localStorage.setItem("viberr_recent_demos", JSON.stringify(recent.slice(0, 5)));
       
     } catch (err) {
@@ -143,11 +141,11 @@ export default function DemoHirePage() {
 
   // Continue to dashboard
   const goToDashboard = () => {
-    if (jobId) {
+    if (jobId && selectedAgent) {
       // Save demo job data to localStorage for the dashboard
       localStorage.setItem(`viberr_demo_${jobId}`, JSON.stringify({
         id: jobId,
-        title: projectType,
+        title: `${selectedAgent.name} Project`,
         spec: spec,
         agent: selectedAgent,
         status: "ready_to_start",
@@ -211,7 +209,7 @@ export default function DemoHirePage() {
 
           {/* Agent Selection */}
           <div className="mb-8">
-            <label className="text-sm text-gray-400 mb-3 block">1. Choose an AI Agent</label>
+            <label className="text-sm text-gray-400 mb-3 block">Choose an AI Agent to interview with</label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {DEMO_AGENTS.map(agent => (
                 <button
@@ -231,37 +229,32 @@ export default function DemoHirePage() {
             </div>
           </div>
 
-          {/* Project Description */}
+          {/* Twitter Handle (optional) - collapsed by default */}
           <div className="mb-8">
-            <label className="text-sm text-gray-400 mb-3 block">2. What do you want to build?</label>
-            <textarea
-              value={projectType}
-              onChange={(e) => setProjectType(e.target.value)}
-              placeholder="Describe your project idea... (e.g., A mobile app for tracking daily habits, A landing page for my SaaS product, An API for processing payments)"
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition resize-none h-24"
-            />
-          </div>
-
-          {/* Twitter Handle (optional) */}
-          <div className="mb-8">
-            <label className="text-sm text-gray-400 mb-3 block">3. Your Twitter/X handle (optional)</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">@</span>
-              <input
-                type="text"
-                value={twitterHandle}
-                onChange={(e) => setTwitterHandle(e.target.value.replace(/^@/, ""))}
-                placeholder="yourhandle"
-                className="w-full pl-8 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition"
-              />
-            </div>
-            <p className="text-xs text-gray-600 mt-2">We'll show your project in the gallery if you share your handle</p>
+            <details className="group">
+              <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-400 transition">
+                + Add your Twitter/X handle (optional)
+              </summary>
+              <div className="mt-3">
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">@</span>
+                  <input
+                    type="text"
+                    value={twitterHandle}
+                    onChange={(e) => setTwitterHandle(e.target.value.replace(/^@/, ""))}
+                    placeholder="yourhandle"
+                    className="w-full pl-8 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition"
+                  />
+                </div>
+                <p className="text-xs text-gray-600 mt-2">We'll credit you if your project gets showcased</p>
+              </div>
+            </details>
           </div>
 
           {/* Start Button */}
           <button
             onClick={startInterview}
-            disabled={!selectedAgent || !projectType.trim() || isLoading}
+            disabled={!selectedAgent || isLoading}
             className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/30 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
           >
             {isLoading ? (
@@ -271,13 +264,17 @@ export default function DemoHirePage() {
               </>
             ) : (
               <>
-                Start AI Interview
+                Start Interview with {selectedAgent?.name || "Agent"}
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </>
             )}
           </button>
+          
+          <p className="text-center text-gray-500 text-sm mt-4">
+            The AI will ask you about your project during the interview
+          </p>
         </div>
       )}
 
