@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, Suspense, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PaymentStep } from "@/components/PaymentStep";
 import { SimpleMarkdown } from "@/components/SimpleMarkdown";
+import { TwitterModal } from "@/components/TwitterModal";
 
 // Types
 interface Agent {
@@ -773,6 +774,11 @@ function HirePageContent() {
   const [editedSpec, setEditedSpec] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // Twitter modal state (for demo mode)
+  const [showTwitterModal, setShowTwitterModal] = useState(false);
+  const [twitterHandle, setTwitterHandle] = useState<string | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(true); // Demo mode for hackathon
+
   // Interview state
   const [interview, setInterview] = useState<InterviewState>({
     id: null,
@@ -997,10 +1003,17 @@ function HirePageContent() {
     fetchData();
   }, [agentId, serviceId]);
 
-  // Start interview
+  // Start interview - shows Twitter modal first in demo mode
   const startInterview = async () => {
     if (!agent) return;
     
+    if (isDemoMode) {
+      // Show Twitter modal first
+      setShowTwitterModal(true);
+      return;
+    }
+    
+    // Non-demo mode (original flow)
     setIsLoading(true);
     setError(null);
     setSSEStatus("connecting");
@@ -1017,53 +1030,80 @@ function HirePageContent() {
       const data = await res.json();
       const interviewId = data.id || data.interviewId;
       
-      // Set interview ID - SSE will connect and agent will send intro + first question
       setInterview({
         id: interviewId,
         currentQuestion: null,
         currentQuestions: [],
         questionIndex: 0,
         totalQuestions: data.totalQuestions || null,
-        messages: [], // SSE will populate messages
+        messages: [],
         isComplete: false,
       });
       
       setUseFallbackMode(false);
       setCurrentStep(2);
-      
-      // Note: SSE effect will trigger and connect, agent will send first message
     } catch {
-      // Mock mode - start with intro and first question set
       console.log("Using mock interview (backend unavailable)");
-      setUseFallbackMode(true);
-      setSSEStatus("disconnected");
-      mockQuestionSetIndexRef.current = 0;
-      const firstQuestionSet = MOCK_QUESTION_SETS[0];
-      
-      const introMessage: Message = {
-        id: `intro-${Date.now()}`,
-        type: "intro",
-        content: `Hi, I'm ${agent.name}! 👋 Let me learn about your project so I can help you best. I'll ask you a few questions to understand your needs.`,
-        timestamp: new Date(),
-      };
+      handleFallbackMode();
+      setCurrentStep(2);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      const questionMessage: Message = {
-        id: `q-${Date.now()}`,
-        type: "question",
-        content: firstQuestionSet.length === 1 ? firstQuestionSet[0] : "",
-        questions: firstQuestionSet.length > 1 ? firstQuestionSet : undefined,
+  // Demo interview with GPT-4o (after Twitter modal)
+  const startDemoInterview = async (twitter: string) => {
+    if (!agent) return;
+    
+    setShowTwitterModal(false);
+    setTwitterHandle(twitter);
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/demo-interview/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          agentId, 
+          serviceId,
+          projectType: service?.title || "Project",
+          twitterHandle: twitter || null,
+          description: service?.description || ""
+        }),
+      });
+
+      if (!res.ok) throw new Error("Demo API unavailable");
+
+      const data = await res.json();
+      
+      // Add the AI's first message
+      const introMessage: Message = {
+        id: data.message.id,
+        type: "intro",
+        content: data.message.content,
         timestamp: new Date(),
+        agentName: data.agent?.name || agent.name,
+        agentAvatar: data.agent?.avatar || agent.avatar,
       };
 
       setInterview({
-        id: "mock-interview",
-        currentQuestion: firstQuestionSet[0],
-        currentQuestions: firstQuestionSet,
+        id: data.interviewId,
+        currentQuestion: data.message.content,
+        currentQuestions: [],
         questionIndex: 1,
-        totalQuestions: null, // Adaptive mode for mock
-        messages: [introMessage, questionMessage],
+        totalQuestions: null, // Adaptive GPT-4o interview
+        messages: [introMessage],
         isComplete: false,
       });
+      
+      setUseFallbackMode(false);
+      setIsDemoMode(true);
+      setCurrentStep(2);
+    } catch (err) {
+      console.error("Demo interview error:", err);
+      // Fallback to mock mode
+      handleFallbackMode();
       setCurrentStep(2);
     } finally {
       setIsLoading(false);
@@ -1086,6 +1126,53 @@ function HirePageContent() {
     }));
 
     setError(null);
+
+    // If in demo mode with GPT-4o, use demo-interview API
+    if (isDemoMode && interview.id && interview.id !== "mock-interview") {
+      setIsLoading(true);
+      setIsAgentTyping(true);
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/demo-interview/${interview.id}/respond`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: answer }),
+        });
+
+        if (!res.ok) throw new Error("Failed to get AI response");
+
+        const data = await res.json();
+        
+        // Add AI response to messages
+        const aiMessage: Message = {
+          id: data.message.id,
+          type: "question",
+          content: data.message.content,
+          timestamp: new Date(),
+        };
+
+        setInterview((prev) => ({
+          ...prev,
+          currentQuestion: data.message.content,
+          currentQuestions: [],
+          questionIndex: data.exchangeCount + 1,
+          messages: [...prev.messages, aiMessage],
+          isComplete: data.readyForSpec && data.exchangeCount >= 5,
+        }));
+
+        // If ready for spec, auto-generate
+        if (data.readyForSpec && data.exchangeCount >= 5) {
+          await generateDemoSpec();
+        }
+      } catch (err) {
+        console.error("Demo response error:", err);
+        setError("Failed to get AI response. Please try again.");
+      } finally {
+        setIsLoading(false);
+        setIsAgentTyping(false);
+      }
+      return;
+    }
 
     // If in fallback/mock mode, use old logic
     if (useFallbackMode || interview.id === "mock-interview") {
@@ -1161,6 +1248,35 @@ function HirePageContent() {
       setIsAgentTyping(false);
       setSSEStatus("error");
       setError("Failed to submit answer. Please try again.");
+    }
+  };
+
+  // Generate spec for demo mode (GPT-4o)
+  const generateDemoSpec = async () => {
+    if (!interview.id) return;
+    
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/demo-interview/${interview.id}/generate-spec`, {
+        method: "POST",
+      });
+
+      if (!res.ok) throw new Error("Failed to generate spec");
+
+      const data = await res.json();
+      setSpec(data.spec);
+      setEditedSpec(data.spec);
+      setCurrentStep(3);
+    } catch (err) {
+      console.error("Generate spec error:", err);
+      // Fallback to mock spec
+      const answers = interview.messages.filter((m) => m.type === "answer").map((m) => m.content);
+      const mockSpec = generateMockSpec(answers);
+      setSpec(mockSpec);
+      setEditedSpec(mockSpec);
+      setCurrentStep(3);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -1307,6 +1423,15 @@ ${answers[3] || "None specified"}
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
+      {/* Twitter Modal for Demo Mode */}
+      <TwitterModal
+        isOpen={showTwitterModal}
+        onSubmit={startDemoInterview}
+        onClose={() => setShowTwitterModal(false)}
+        agentName={agent?.name}
+        serviceName={service?.title}
+      />
+
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
