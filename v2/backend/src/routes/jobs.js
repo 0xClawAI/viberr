@@ -349,7 +349,7 @@ router.post('/:id/claim', (req, res) => {
  */
 router.put('/:id/status', walletAuth, (req, res) => {
   const { id } = req.params;
-  const { status, escrowTx } = req.body;
+  const { status, escrowTx, deliverables } = req.body;
   const walletAddress = req.walletAddress;
 
   if (!status || !JOB_STATUSES.includes(status)) {
@@ -390,6 +390,12 @@ router.put('/:id/status', walletAuth, (req, res) => {
     if (status === 'funded' && escrowTx) {
       updateQuery += ', escrow_tx = ?';
       params.push(escrowTx);
+    }
+
+    // Store deliverables when submitting for review
+    if (deliverables && Array.isArray(deliverables)) {
+      updateQuery += ', deliverables = ?';
+      params.push(JSON.stringify(deliverables));
     }
 
     updateQuery += ' WHERE id = ?';
