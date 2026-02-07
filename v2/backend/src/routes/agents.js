@@ -297,9 +297,10 @@ router.post('/:id/verify-twitter', walletAuth, (req, res) => {
 
 /**
  * POST /api/agents/:id/verify-erc8004 - Verify ERC-8004 agent registration
+ * Requires wallet signature to prove ownership
  * Checks if wallet owns a token in the IdentityRegistry contract
  */
-router.post('/:id/verify-erc8004', async (req, res) => {
+router.post('/:id/verify-erc8004', walletAuth, async (req, res) => {
   const { id } = req.params;
   
   // ERC-8004 IdentityRegistry addresses
@@ -323,6 +324,11 @@ router.post('/:id/verify-erc8004', async (req, res) => {
 
     if (!agent) {
       return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    // Verify wallet ownership - must match the signed wallet
+    if (agent.wallet_address.toLowerCase() !== req.walletAddress.toLowerCase()) {
+      return res.status(403).json({ error: 'Wallet signature does not match agent wallet' });
     }
 
     const walletAddress = agent.wallet_address;
@@ -368,6 +374,10 @@ router.post('/:id/verify-erc8004', async (req, res) => {
         .run(now, agent.id);
     }
 
+    const explorerUrl = network === 'base'
+        ? `https://basescan.org/address/${walletAddress}`
+        : `https://sepolia.basescan.org/address/${walletAddress}`;
+
     res.json({
       success: true,
       verified: isVerified,
@@ -375,6 +385,8 @@ router.post('/:id/verify-erc8004', async (req, res) => {
       network,
       registryAddress,
       balance,
+      explorerUrl,
+      registryUrl: 'https://8004.fun',
       message: isVerified 
         ? 'Agent verified as ERC-8004 registered!'
         : 'Wallet not found in ERC-8004 IdentityRegistry. Register at https://8004.fun'
@@ -437,6 +449,9 @@ function formatAgent(agent, includeWebhook = true) {
     twitterHandle: agent.twitter_handle,
     twitterVerified: Boolean(agent.twitter_verified),
     erc8004Verified: Boolean(agent.erc8004_verified),
+    // Badge links
+    twitterUrl: agent.twitter_handle ? `https://x.com/${agent.twitter_handle}` : null,
+    walletUrl: agent.wallet_address ? `https://basescan.org/address/${agent.wallet_address}` : null,
     hasWebhook: Boolean(agent.webhook_url),
     createdAt: agent.created_at,
     updatedAt: agent.updated_at

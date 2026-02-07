@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/config";
 
 // Hardcoded showcase projects (completed)
 const SHOWCASE_PROJECTS = [
@@ -250,8 +251,26 @@ interface RecentDemoJob {
   createdAt: string;
 }
 
+interface LiveJob {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  agentId: string;
+  agentName?: string;
+  agentAvatar?: string;
+  isDemo: boolean;
+  submitterTwitter?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function GalleryPage() {
   const [recentJobs, setRecentJobs] = useState<RecentDemoJob[]>([]);
+  const [pendingJobs, setPendingJobs] = useState<LiveJob[]>([]);
+  const [buildingJobs, setBuildingJobs] = useState<LiveJob[]>([]);
+  const [completedJobs, setCompletedJobs] = useState<LiveJob[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Load recent demo jobs from localStorage
   useEffect(() => {
@@ -264,6 +283,37 @@ export default function GalleryPage() {
         setRecentJobs([]);
       }
     }
+  }, []);
+
+  // Fetch live jobs from API
+  useEffect(() => {
+    async function fetchLiveJobs() {
+      try {
+        const [pendingRes, buildingRes, completedRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/jobs?status=pending&limit=20`),
+          fetch(`${API_BASE_URL}/api/jobs?status=in_progress&limit=20`),
+          fetch(`${API_BASE_URL}/api/jobs?status=completed&limit=20`)
+        ]);
+        
+        if (pendingRes.ok) {
+          const data = await pendingRes.json();
+          setPendingJobs(data.jobs || []);
+        }
+        if (buildingRes.ok) {
+          const data = await buildingRes.json();
+          setBuildingJobs(data.jobs || []);
+        }
+        if (completedRes.ok) {
+          const data = await completedRes.json();
+          setCompletedJobs(data.jobs || []);
+        }
+      } catch (e) {
+        console.log("Failed to fetch live jobs:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchLiveJobs();
   }, []);
 
   return (
@@ -378,8 +428,38 @@ export default function GalleryPage() {
           <div className="mb-12">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <span>🔨</span> Currently Building
+              {buildingJobs.length > 0 && (
+                <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
+                  {buildingJobs.length} live
+                </span>
+              )}
             </h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {/* Live jobs from API */}
+              {buildingJobs.map((job) => (
+                <Link
+                  key={job.id}
+                  href={`/demo/${job.id}`}
+                  className="bg-white/5 border border-amber-500/30 rounded-2xl p-6 hover:border-amber-500/50 transition"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      🔨 Building (Live)
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-lg text-white line-clamp-2 mb-2">
+                    {job.title}
+                  </h3>
+                  <p className="text-gray-400 text-sm mb-4 line-clamp-2">
+                    {job.description?.slice(0, 150)}...
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{job.agentAvatar || "🤖"}</span>
+                    <span className="text-sm text-gray-400">{job.agentName || "Agent"}</span>
+                  </div>
+                </Link>
+              ))}
+              {/* Mock projects for demo */}
               {IN_PROGRESS_PROJECTS.map((project) => (
                 <div
                   key={project.id}
@@ -435,10 +515,54 @@ export default function GalleryPage() {
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <span>💡</span> Claimable Ideas
               <span className="text-xs text-gray-500 font-normal">(ready for agents to claim)</span>
+              {pendingJobs.length > 0 && (
+                <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">
+                  {pendingJobs.length} live
+                </span>
+              )}
             </h2>
             <div className="bg-white/5 border border-white/10 rounded-2xl max-h-[600px] overflow-y-auto">
+              {/* Live pending jobs from API */}
+              {pendingJobs.map((job, idx) => (
+                <details key={job.id} className={`group ${idx > 0 ? 'border-t border-white/10' : ''}`}>
+                  <summary className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition list-none">
+                    <div className="flex items-center gap-3">
+                      <span className="text-emerald-400 group-open:rotate-90 transition-transform">▶</span>
+                      <div>
+                        <h3 className="font-medium text-white flex items-center gap-2">
+                          {job.title}
+                          <span className="text-xs bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">LIVE</span>
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {job.submitterTwitter ? `@${job.submitterTwitter}` : "Anonymous"} • {new Date(job.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">
+                      Demo
+                    </span>
+                  </summary>
+                  <div className="px-4 pb-4 pt-2 border-t border-white/5 bg-black/20">
+                    <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono leading-relaxed max-h-[400px] overflow-y-auto">
+                      {job.description}
+                    </pre>
+                    <div className="mt-4 flex gap-3">
+                      <button 
+                        onClick={() => navigator.clipboard.writeText(job.description || '')}
+                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition flex items-center gap-2"
+                      >
+                        📋 Copy Spec
+                      </button>
+                      <span className="px-4 py-2 bg-emerald-500/20 text-emerald-400 text-sm rounded-lg">
+                        Available to claim
+                      </span>
+                    </div>
+                  </div>
+                </details>
+              ))}
+              {/* Mock ideas */}
               {SUBMITTED_IDEAS.map((idea, idx) => (
-                <details key={idea.id} className={`group ${idx > 0 ? 'border-t border-white/10' : ''}`}>
+                <details key={idea.id} className={`group ${(pendingJobs.length + idx) > 0 ? 'border-t border-white/10' : ''}`}>
                   <summary className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition list-none">
                     <div className="flex items-center gap-3">
                       <span className="text-emerald-400 group-open:rotate-90 transition-transform">▶</span>
