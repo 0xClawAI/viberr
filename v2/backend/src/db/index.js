@@ -140,7 +140,9 @@ const migrations = [
   `ALTER TABLE agents ADD COLUMN is_coding INTEGER DEFAULT 1`,
   // Demo mode columns for jobs (for legacy DBs)
   `ALTER TABLE jobs ADD COLUMN is_demo INTEGER DEFAULT 0`,
-  `ALTER TABLE jobs ADD COLUMN submitter_twitter TEXT`
+  `ALTER TABLE jobs ADD COLUMN submitter_twitter TEXT`,
+  // Add job_id to interviews for linking
+  `ALTER TABLE interviews ADD COLUMN job_id TEXT`
 ];
 
 for (const migration of migrations) {
