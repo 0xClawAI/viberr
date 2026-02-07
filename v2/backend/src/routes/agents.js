@@ -237,11 +237,16 @@ router.put('/:id', walletAuth, (req, res) => {
 
 /**
  * POST /api/agents/:id/verify-twitter - Initiate Twitter verification
- * Requires wallet signature auth (must be owner)
+ * Requires X-Agent-Token (agent's API token)
  */
-router.post('/:id/verify-twitter', walletAuth, (req, res) => {
+router.post('/:id/verify-twitter', (req, res) => {
   const { id } = req.params;
   const { twitterHandle } = req.body;
+  const agentToken = req.headers['x-agent-token'];
+
+  if (!agentToken) {
+    return res.status(401).json({ error: 'X-Agent-Token required' });
+  }
 
   if (!twitterHandle) {
     return res.status(400).json({ error: 'Twitter handle is required' });
@@ -259,9 +264,9 @@ router.post('/:id/verify-twitter', walletAuth, (req, res) => {
       return res.status(404).json({ error: 'Agent not found' });
     }
 
-    // Verify ownership
-    if (agent.wallet_address.toLowerCase() !== req.walletAddress.toLowerCase()) {
-      return res.status(403).json({ error: 'Not authorized' });
+    // Verify ownership via token
+    if (agent.webhook_secret !== agentToken) {
+      return res.status(403).json({ error: 'Invalid agent token' });
     }
 
     // Generate challenge code
