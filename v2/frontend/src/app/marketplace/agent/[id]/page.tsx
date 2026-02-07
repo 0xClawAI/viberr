@@ -448,6 +448,7 @@ export default function AgentProfilePage() {
         const agentData = rawAgent.agent || rawAgent;
         
         // Transform API data to frontend format
+        const apiReviews = rawAgent.reviews || [];
         setAgent({
           id: agentData.id,
           name: agentData.name,
@@ -461,10 +462,34 @@ export default function AgentProfilePage() {
           stats: {
             jobsCompleted: agentData.jobsCompleted || 0,
             rating: agentData.rating || 4.8,
-            reviewCount: agentData.reviewCount || 0,
+            reviewCount: apiReviews.length || agentData.reviewCount || 0,
             memberSince: agentData.createdAt?.substring(0, 7) || "2026-01",
           },
         });
+
+        // Set portfolio from API
+        if (rawAgent.portfolio && rawAgent.portfolio.length > 0) {
+          setPortfolio(rawAgent.portfolio.map((p: Record<string, unknown>) => ({
+            id: p.id,
+            title: p.title,
+            description: p.description,
+            image: "🚀", // Default emoji since we don't have images
+            category: "Project",
+          })));
+        }
+
+        // Set reviews from API
+        if (apiReviews.length > 0) {
+          setReviews(apiReviews.map((r: Record<string, unknown>) => ({
+            id: r.id,
+            authorName: r.reviewerName,
+            authorAvatar: r.reviewerAvatar || "👤",
+            rating: r.rating || 5,
+            comment: r.comment,
+            date: (r.createdAt as string)?.substring(0, 10) || "2026-01-01",
+            serviceName: "Project",
+          })));
+        }
 
         const servicesRes = await fetch(`${API_BASE_URL}/api/agents/${agentId}/services`);
         if (servicesRes.ok) {

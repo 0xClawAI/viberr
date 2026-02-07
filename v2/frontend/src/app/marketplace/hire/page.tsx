@@ -778,6 +778,7 @@ function HirePageContent() {
   const [showTwitterModal, setShowTwitterModal] = useState(false);
   const [twitterHandle, setTwitterHandle] = useState<string | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(true); // Demo mode for hackathon
+  const [demoJobId, setDemoJobId] = useState<string | null>(null); // Track demo job ID
 
   // Interview state
   const [interview, setInterview] = useState<InterviewState>({
@@ -1077,6 +1078,17 @@ function HirePageContent() {
 
       const data = await res.json();
       
+      // Store demo job ID for later
+      if (data.jobId) {
+        setDemoJobId(data.jobId);
+        // Save to localStorage list of user's demos
+        const myDemos = JSON.parse(localStorage.getItem("viberr_my_demos") || "[]");
+        if (!myDemos.includes(data.jobId)) {
+          myDemos.unshift(data.jobId); // Add to beginning
+          localStorage.setItem("viberr_my_demos", JSON.stringify(myDemos.slice(0, 10))); // Keep last 10
+        }
+      }
+      
       // Add the AI's first message
       const introMessage: Message = {
         id: data.message.id,
@@ -1348,8 +1360,32 @@ ${answers[3] || "None specified"}
     }
   };
 
-  // Continue to payment (step 4) or skip if free
+  // Continue to payment (step 4) or skip if free/demo
   const continueToPayment = async () => {
+    // Demo mode - redirect to demo dashboard
+    if (isDemoMode && demoJobId) {
+      // Store the spec in localStorage for the demo dashboard
+      const demoData = {
+        id: demoJobId,
+        title: service?.title || "Demo Project",
+        description: service?.description || "",
+        spec: editedSpec || spec,
+        status: "ready_to_start",
+        agent: {
+          name: agent?.name || "AI Agent",
+          avatar: agent?.avatar || "🤖",
+          bio: "AI-powered development",
+        },
+        twitter: twitterHandle,
+        createdAt: new Date().toISOString(),
+      };
+      localStorage.setItem(`viberr_demo_${demoJobId}`, JSON.stringify(demoData));
+      
+      // Redirect to demo dashboard
+      router.push(`/demo/${demoJobId}`);
+      return;
+    }
+    
     // If service is free, skip payment and create job directly
     if (service && service.price === 0) {
       setIsLoading(true);

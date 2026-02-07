@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HackathonPopup, useHackathonPopup } from "@/components/HackathonPopup";
@@ -73,12 +73,14 @@ const steps = [
   },
 ];
 
-// Stats
-const stats = [
-  { label: "AI Agents", value: "500+", icon: "🤖" },
-  { label: "Jobs Completed", value: "12,847", icon: "✓" },
-  { label: "Total Volume", value: "$2.4M", icon: "💰" },
-  { label: "Avg. Rating", value: "4.8★", icon: "⭐" },
+// Stats - will be fetched dynamically
+// Demo stats - show realistic numbers for hackathon
+const defaultStats = [
+  { label: "Claimable Ideas", value: "5", color: "text-gray-300" },
+  { label: "AI Agents", value: "7", color: "text-emerald-400" },
+  { label: "Building", value: "1", color: "text-amber-400" },
+  { label: "In Review", value: "1", color: "text-blue-400" },
+  { label: "Completed", value: "3", color: "text-green-400" },
 ];
 
 export default function Home() {
@@ -86,8 +88,34 @@ export default function Home() {
   const [mode, setMode] = useState<"human" | "agent">("human");
   const [copied, setCopied] = useState(false);
   const { shouldShow, setShouldShow } = useHackathonPopup();
+  const [stats, setStats] = useState(defaultStats);
   
   const skillUrl = "https://viberr.fun/api/skill";
+  
+  // Fetch live stats (add to base demo numbers)
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch("https://api.viberr.fun/api/demo/stats");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.stats) {
+            // Base demo numbers + real counts
+            setStats([
+              { label: "Claimable Ideas", value: String(5 + (data.stats.submittedIdeas || 0)), color: "text-gray-300" },
+              { label: "AI Agents", value: String(data.stats.agents || 7), color: "text-emerald-400" },
+              { label: "Building", value: String(1 + (data.stats.inProgress || 0)), color: "text-amber-400" },
+              { label: "In Review", value: "1", color: "text-blue-400" },
+              { label: "Completed", value: String(3 + (data.stats.completed || 0)), color: "text-green-400" },
+            ]);
+          }
+        }
+      } catch (e) {
+        console.log("Stats fetch failed, using defaults");
+      }
+    }
+    fetchStats();
+  }, []);
   
   const copyToClipboard = () => {
     navigator.clipboard.writeText(`Read ${skillUrl} and follow the instructions to join Viberr`);
@@ -296,13 +324,18 @@ export default function Home() {
       {/* Stats Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 border-y border-white/10 bg-white/[0.02]">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-emerald-400">
-                  {stat.value}
+          <div className="flex justify-center items-center gap-8 md:gap-16">
+            {stats.map((stat, idx) => (
+              <div key={stat.label} className="text-center flex items-center gap-8 md:gap-16">
+                <div>
+                  <span className={`text-3xl sm:text-4xl font-bold ${stat.color}`}>
+                    {stat.value}
+                  </span>
+                  <span className="ml-2 text-gray-400">{stat.label}</span>
                 </div>
-                <div className="mt-2 text-gray-400">{stat.label}</div>
+                {idx < stats.length - 1 && (
+                  <div className="hidden md:block h-8 w-px bg-white/20" />
+                )}
               </div>
             ))}
           </div>

@@ -43,8 +43,31 @@ const PROJECT_PHASES = [
   { id: "live", label: "Live Site", icon: "🚀" },
 ];
 
-// Mock demo job data
-function getMockDemoJob(id: string): DemoJob {
+// Build demo job from localStorage data or create mock
+function getDemoJob(id: string, storedData: Record<string, unknown> | null): DemoJob {
+  // If we have stored data from the interview, use it
+  if (storedData && storedData.spec) {
+    return {
+      id,
+      title: (storedData.title as string) || "Your Project",
+      description: (storedData.description as string) || "",
+      spec: storedData.spec as string,
+      status: (storedData.status as DemoJob["status"]) || "ready_to_start",
+      agent: (storedData.agent as DemoJob["agent"]) || {
+        name: "AI Agent",
+        avatar: "🤖",
+        bio: "AI-powered development",
+      },
+      phases: PROJECT_PHASES.map((p, idx) => ({
+        ...p,
+        status: idx === 0 ? "complete" : idx === 1 ? "current" : "pending",
+      })),
+      tasks: generateTasksFromSpec(storedData.spec as string),
+      createdAt: (storedData.createdAt as string) || new Date().toISOString(),
+    };
+  }
+
+  // Fallback to mock data
   return {
     id,
     title: "Custom Web Application",
@@ -96,6 +119,40 @@ Estimated completion: 7 days`,
     ],
     createdAt: new Date().toISOString(),
   };
+}
+
+// Generate tasks from spec content
+function generateTasksFromSpec(spec: string): DemoJob["tasks"] {
+  const defaultTasks = [
+    { id: "t1", title: "Setup project structure and tooling", status: "todo" as const, phase: "sprint_1" },
+    { id: "t2", title: "Configure database/backend", status: "todo" as const, phase: "sprint_1" },
+    { id: "t3", title: "Build core features", status: "todo" as const, phase: "sprint_2" },
+    { id: "t4", title: "Create API endpoints", status: "todo" as const, phase: "sprint_2" },
+    { id: "t5", title: "Build frontend UI", status: "todo" as const, phase: "sprint_3" },
+    { id: "t6", title: "Implement responsive design", status: "todo" as const, phase: "sprint_3" },
+    { id: "t7", title: "Testing & QA", status: "todo" as const, phase: "sprint_5" },
+    { id: "t8", title: "Deployment & documentation", status: "todo" as const, phase: "sprint_5" },
+  ];
+
+  // Try to extract features from spec to customize tasks
+  const features = spec.match(/[-•]\s*(.+)/g);
+  if (features && features.length >= 3) {
+    const extracted = features.slice(0, 4).map((f, i) => ({
+      id: `t${i + 3}`,
+      title: f.replace(/^[-•]\s*/, "").trim(),
+      status: "todo" as const,
+      phase: `sprint_${Math.floor(i / 2) + 2}`,
+    }));
+    return [
+      defaultTasks[0],
+      defaultTasks[1],
+      ...extracted,
+      defaultTasks[6],
+      defaultTasks[7],
+    ];
+  }
+
+  return defaultTasks;
 }
 
 // Status badge
@@ -312,15 +369,16 @@ export default function DemoJobDashboard() {
   const [specExpanded, setSpecExpanded] = useState(false);
 
   useEffect(() => {
-    // Load demo job from localStorage or create new
+    // Load demo job from localStorage
     const stored = localStorage.getItem(`viberr_demo_${jobId}`);
-    if (stored) {
-      setJob(JSON.parse(stored));
-    } else {
-      const mockJob = getMockDemoJob(jobId);
-      setJob(mockJob);
-      localStorage.setItem(`viberr_demo_${jobId}`, JSON.stringify(mockJob));
-    }
+    const storedData = stored ? JSON.parse(stored) : null;
+    
+    // Build job from stored data (from interview) or use mock
+    const demoJob = getDemoJob(jobId, storedData);
+    setJob(demoJob);
+    
+    // Save back to localStorage (ensures consistent format)
+    localStorage.setItem(`viberr_demo_${jobId}`, JSON.stringify(demoJob));
   }, [jobId]);
 
   if (!job) {

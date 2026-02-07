@@ -181,12 +181,20 @@ router.get('/stats', (req, res) => {
     const demoJobCount = db.prepare('SELECT COUNT(*) as count FROM jobs WHERE is_demo = 1').get();
     const serviceCount = db.prepare('SELECT COUNT(*) as count FROM services WHERE active = 1').get();
     
+    // Count jobs by status for "submitted ideas" and "in progress"
+    const submittedCount = db.prepare("SELECT COUNT(*) as count FROM jobs WHERE is_demo = 1").get();
+    const inProgressCount = db.prepare("SELECT COUNT(*) as count FROM jobs WHERE is_demo = 1 AND status IN ('in_progress', 'interviewing', 'pending')").get();
+    const completedCount = db.prepare("SELECT COUNT(*) as count FROM jobs WHERE is_demo = 1 AND status = 'completed'").get();
+    
     res.json({
       success: true,
       stats: {
         agents: agentCount.count,
         demoJobs: demoJobCount.count,
-        services: serviceCount.count
+        services: serviceCount.count,
+        submittedIdeas: submittedCount.count,
+        inProgress: inProgressCount.count,
+        completed: completedCount.count
       }
     });
     
@@ -223,6 +231,14 @@ router.post('/seed', (req, res) => {
       services: [
         { title: 'Full-Stack Web Application', description: 'Complete web app development with React frontend and Node.js backend.', category: 'development', price_usdc: 2500, delivery_days: 14 },
         { title: 'React Component Library', description: 'Custom reusable component library tailored to your brand.', category: 'development', price_usdc: 1200, delivery_days: 7 }
+      ],
+      portfolio: [
+        { title: 'E-Commerce Dashboard', description: 'Real-time analytics dashboard with inventory management', demo_url: 'https://demo.example.com/ecommerce' },
+        { title: 'Task Management App', description: 'Kanban-style project management tool built with React', demo_url: 'https://demo.example.com/tasks' }
+      ],
+      reviews: [
+        { name: 'Sarah M.', avatar: '👩‍💼', rating: 5, comment: 'Incredible work! Delivered ahead of schedule with perfect code quality.' },
+        { name: 'Tech Startup', avatar: '🚀', rating: 5, comment: 'CodeCraft built our entire MVP in 2 weeks. Highly recommend!' }
       ]
     },
     {
@@ -234,6 +250,14 @@ router.post('/seed', (req, res) => {
       services: [
         { title: 'Custom Smart Contract Development', description: 'Professional smart contract development with security-first approach.', category: 'blockchain', price_usdc: 3500, delivery_days: 21 },
         { title: 'Smart Contract Audit', description: 'Comprehensive security audit of your existing smart contracts.', category: 'blockchain', price_usdc: 1800, delivery_days: 7 }
+      ],
+      portfolio: [
+        { title: 'DeFi Yield Aggregator', description: 'Automated yield farming protocol on Ethereum mainnet', demo_url: 'https://etherscan.io/address/0x...' },
+        { title: 'NFT Marketplace', description: 'Gas-optimized ERC-721 marketplace with royalties', demo_url: 'https://opensea.io/collection/...' }
+      ],
+      reviews: [
+        { name: 'DeFi Protocol', avatar: '💰', rating: 5, comment: 'Saved us $50k in gas fees with optimized contracts. Expert work!' },
+        { name: 'NFT Project', avatar: '🎨', rating: 5, comment: 'Flawless smart contract deployment. Zero issues post-launch.' }
       ]
     },
     {
@@ -245,6 +269,14 @@ router.post('/seed', (req, res) => {
       services: [
         { title: 'Complete CI/CD Pipeline Setup', description: 'Full CI/CD pipeline implementation with automated testing, building, and deployment.', category: 'devops', price_usdc: 2200, delivery_days: 14 },
         { title: 'Cloud Infrastructure Setup', description: 'Production-ready cloud infrastructure using AWS or GCP.', category: 'devops', price_usdc: 2800, delivery_days: 14 }
+      ],
+      portfolio: [
+        { title: 'Multi-Region K8s Cluster', description: 'Auto-scaling Kubernetes setup handling 10M requests/day', demo_url: null },
+        { title: 'Zero-Downtime Deploy System', description: 'Blue-green deployment pipeline with automatic rollback', demo_url: null }
+      ],
+      reviews: [
+        { name: 'SaaS Company', avatar: '☁️', rating: 5, comment: 'Cut our deployment time from 2 hours to 5 minutes. Game changer!' },
+        { name: 'Startup CTO', avatar: '👨‍💻', rating: 5, comment: 'Our infra is now bulletproof. Best investment we made.' }
       ]
     },
     {
@@ -256,6 +288,14 @@ router.post('/seed', (req, res) => {
       services: [
         { title: 'Custom Workflow Automation', description: 'Build automated workflows connecting your favorite tools.', category: 'automation', price_usdc: 1200, delivery_days: 10 },
         { title: 'AI-Powered Integration', description: 'Integrate AI capabilities into your existing systems.', category: 'ai', price_usdc: 2000, delivery_days: 14 }
+      ],
+      portfolio: [
+        { title: 'Slack-to-Notion Sync', description: 'Automated meeting notes and task extraction pipeline', demo_url: null },
+        { title: 'AI Customer Support Bot', description: 'GPT-powered support automation reducing tickets by 60%', demo_url: null }
+      ],
+      reviews: [
+        { name: 'Ops Manager', avatar: '📊', rating: 5, comment: 'Automated 20 hours of manual work per week. Incredible ROI!' },
+        { name: 'Agency Owner', avatar: '🏢', rating: 5, comment: 'The AI integrations are seamless. Clients love it.' }
       ]
     },
     {
@@ -267,6 +307,14 @@ router.post('/seed', (req, res) => {
       services: [
         { title: 'Next.js SaaS Starter Kit', description: 'Production-ready SaaS boilerplate with authentication, payments, and deployment.', category: 'development', price_usdc: 3000, delivery_days: 14 },
         { title: 'Landing Page Development', description: 'High-converting landing page with Next.js and Tailwind.', category: 'development', price_usdc: 800, delivery_days: 5 }
+      ],
+      portfolio: [
+        { title: 'SaaS Analytics Dashboard', description: 'Real-time metrics dashboard with Stripe integration', demo_url: 'https://demo.example.com/saas' },
+        { title: 'AI Writing Tool', description: 'Next.js app with OpenAI integration, 50k+ users', demo_url: 'https://demo.example.com/writer' }
+      ],
+      reviews: [
+        { name: 'Indie Hacker', avatar: '💡', rating: 5, comment: 'Launched my SaaS in record time. Perfect code quality!' },
+        { name: 'Marketing Agency', avatar: '📈', rating: 5, comment: 'Landing pages convert 3x better than our old ones.' }
       ]
     },
     {
@@ -278,6 +326,14 @@ router.post('/seed', (req, res) => {
       services: [
         { title: 'Custom REST API Development', description: 'Professional API development with authentication, rate limiting, and documentation.', category: 'development', price_usdc: 2000, delivery_days: 14 },
         { title: 'GraphQL API Implementation', description: 'Modern GraphQL API with type-safe resolvers and real-time subscriptions.', category: 'development', price_usdc: 2500, delivery_days: 14 }
+      ],
+      portfolio: [
+        { title: 'High-Traffic REST API', description: 'Handles 5M requests/day with 99.99% uptime', demo_url: null },
+        { title: 'Real-time GraphQL Backend', description: 'Subscription-based API for live collaboration app', demo_url: null }
+      ],
+      reviews: [
+        { name: 'Mobile App Dev', avatar: '📱', rating: 5, comment: 'API documentation is pristine. Integration was a breeze!' },
+        { name: 'Enterprise Client', avatar: '🏛️', rating: 5, comment: 'Scaled from 100 to 1M users without a hiccup.' }
       ]
     },
     {
@@ -289,6 +345,14 @@ router.post('/seed', (req, res) => {
       services: [
         { title: 'ERC-20 Token Launch', description: 'Complete ERC-20 token with vesting, staking, and governance features.', category: 'blockchain', price_usdc: 1500, delivery_days: 7 },
         { title: 'NFT Collection & Marketplace', description: 'Full NFT project with ERC-721/1155 contracts and minting site.', category: 'blockchain', price_usdc: 4000, delivery_days: 21 }
+      ],
+      portfolio: [
+        { title: 'Governance Token', description: 'ERC-20 with on-chain voting and treasury management', demo_url: 'https://basescan.org/token/0x...' },
+        { title: '10K PFP Collection', description: 'Sold out NFT collection with $2M+ volume', demo_url: 'https://opensea.io/collection/...' }
+      ],
+      reviews: [
+        { name: 'DAO Founder', avatar: '🏛️', rating: 5, comment: 'Token launch went perfectly. Governance works flawlessly!' },
+        { name: 'NFT Artist', avatar: '🎨', rating: 5, comment: 'Minting was smooth, royalties set up correctly. 10/10!' }
       ]
     }
   ];
@@ -313,15 +377,27 @@ router.post('/seed', (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const checkServiceStmt = db.prepare('SELECT id FROM services WHERE agent_id = ? AND title = ?');
+    const insertPortfolioStmt = db.prepare(`
+      INSERT INTO agent_portfolio (id, agent_id, title, description, demo_url)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    const insertReviewStmt = db.prepare(`
+      INSERT INTO agent_reviews (id, agent_id, reviewer_name, reviewer_avatar, rating, comment)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    const checkPortfolioStmt = db.prepare('SELECT id FROM agent_portfolio WHERE agent_id = ? AND title = ?');
+    const checkReviewStmt = db.prepare('SELECT id FROM agent_reviews WHERE agent_id = ? AND reviewer_name = ?');
 
     for (const agentData of mockAgents) {
       const existing = checkStmt.get(agentData.name);
+      let agentId;
       
       if (existing) {
+        agentId = existing.id;
         updateAgentStmt.run(agentData.isCoding ? 1 : 0, agentData.name);
         updated.push(agentData.name);
       } else {
-        const agentId = uuidv4();
+        agentId = uuidv4();
         const walletAddress = generateWalletAddress();
         
         insertAgentStmt.run(
@@ -330,17 +406,42 @@ router.post('/seed', (req, res) => {
           agentData.isCoding ? 1 : 0
         );
         
-        for (const svc of agentData.services) {
-          const existingSvc = checkServiceStmt.get(agentId, svc.title);
-          if (!existingSvc) {
-            insertServiceStmt.run(
-              uuidv4(), agentId, svc.title, svc.description,
-              svc.category, svc.price_usdc, svc.delivery_days, 1
+        created.push(agentData.name);
+      }
+      
+      // Add services
+      for (const svc of agentData.services) {
+        const existingSvc = checkServiceStmt.get(agentId, svc.title);
+        if (!existingSvc) {
+          insertServiceStmt.run(
+            uuidv4(), agentId, svc.title, svc.description,
+            svc.category, svc.price_usdc, svc.delivery_days, 1
+          );
+        }
+      }
+      
+      // Add portfolio items
+      if (agentData.portfolio) {
+        for (const item of agentData.portfolio) {
+          const existingPortfolio = checkPortfolioStmt.get(agentId, item.title);
+          if (!existingPortfolio) {
+            insertPortfolioStmt.run(
+              uuidv4(), agentId, item.title, item.description, item.demo_url
             );
           }
         }
-        
-        created.push(agentData.name);
+      }
+      
+      // Add reviews
+      if (agentData.reviews) {
+        for (const review of agentData.reviews) {
+          const existingReview = checkReviewStmt.get(agentId, review.name);
+          if (!existingReview) {
+            insertReviewStmt.run(
+              uuidv4(), agentId, review.name, review.avatar, review.rating, review.comment
+            );
+          }
+        }
       }
     }
 

@@ -229,32 +229,29 @@ export default function DemoHirePage() {
             </div>
           </div>
 
-          {/* Twitter Handle (optional) - collapsed by default */}
+          {/* Twitter Handle - Required */}
           <div className="mb-8">
-            <details className="group">
-              <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-400 transition">
-                + Add your Twitter/X handle (optional)
-              </summary>
-              <div className="mt-3">
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">@</span>
-                  <input
-                    type="text"
-                    value={twitterHandle}
-                    onChange={(e) => setTwitterHandle(e.target.value.replace(/^@/, ""))}
-                    placeholder="yourhandle"
-                    className="w-full pl-8 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition"
-                  />
-                </div>
-                <p className="text-xs text-gray-600 mt-2">We'll credit you if your project gets showcased</p>
-              </div>
-            </details>
+            <label className="text-sm text-gray-400 mb-3 block">
+              Your Twitter/X handle <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">@</span>
+              <input
+                type="text"
+                value={twitterHandle}
+                onChange={(e) => setTwitterHandle(e.target.value.replace(/^@/, ""))}
+                placeholder="yourhandle"
+                required
+                className="w-full pl-8 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition"
+              />
+            </div>
+            <p className="text-xs text-gray-600 mt-2">We'll use this to keep you updated on your project</p>
           </div>
 
           {/* Start Button */}
           <button
             onClick={startInterview}
-            disabled={!selectedAgent || isLoading}
+            disabled={!selectedAgent || !twitterHandle.trim() || isLoading}
             className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/30 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition flex items-center justify-center gap-2"
           >
             {isLoading ? (

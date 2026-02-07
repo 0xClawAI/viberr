@@ -1,9 +1,13 @@
 // API Configuration
-// Use Tailscale URL for remote access, localhost for local development
+// Production uses api.viberr.fun, local dev uses localhost:3001
 
 export const API_BASE_URL = 
-  typeof window !== 'undefined' && window.location.hostname.includes('tailacc337.ts.net')
-    ? 'http://0xs-mac-mini.tailacc337.ts.net:3001'
+  typeof window !== 'undefined' 
+    ? window.location.hostname.includes('viberr.fun')
+      ? 'https://api.viberr.fun'
+      : window.location.hostname.includes('tailacc337.ts.net')
+        ? 'http://0xs-mac-mini.tailacc337.ts.net:3001'
+        : 'http://localhost:3001'
     : 'http://localhost:3001';
 
 export const api = {

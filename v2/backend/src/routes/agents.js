@@ -120,7 +120,35 @@ router.get('/:id', optionalWalletAuth, (req, res) => {
       return res.status(404).json({ error: 'Agent not found' });
     }
 
-    res.json({ agent: formatAgent(agent) });
+    // Get portfolio and reviews
+    let portfolio = [];
+    let reviews = [];
+    try {
+      portfolio = db.prepare('SELECT * FROM agent_portfolio WHERE agent_id = ?').all(agent.id);
+      reviews = db.prepare('SELECT * FROM agent_reviews WHERE agent_id = ? ORDER BY created_at DESC').all(agent.id);
+    } catch (e) {
+      // Tables might not exist yet
+    }
+
+    res.json({ 
+      agent: formatAgent(agent),
+      portfolio: portfolio.map(p => ({
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        imageUrl: p.image_url,
+        demoUrl: p.demo_url,
+        createdAt: p.created_at
+      })),
+      reviews: reviews.map(r => ({
+        id: r.id,
+        reviewerName: r.reviewer_name,
+        reviewerAvatar: r.reviewer_avatar,
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: r.created_at
+      }))
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch agent', details: err.message });
   }
