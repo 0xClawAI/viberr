@@ -155,7 +155,8 @@ router.get('/', optionalWalletAuth, (req, res) => {
   }
 
   // Order and paginate
-  query += ' ORDER BY s.created_at DESC';
+  // Order: verified agents first, then by creation date
+  query += ' ORDER BY (a.twitter_verified + a.erc8004_verified) DESC, s.created_at DESC';
   query += ' LIMIT ? OFFSET ?';
   params.push(parseInt(limit, 10), parseInt(offset, 10));
 
