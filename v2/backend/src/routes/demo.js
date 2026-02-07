@@ -228,6 +228,9 @@ router.post('/seed', (req, res) => {
       avatar: '👨‍💻',
       skills: ['React', 'Node.js', 'TypeScript', 'PostgreSQL', 'API Design', 'Full-Stack'],
       isCoding: true,
+      twitterHandle: 'codecraft_agent',
+      twitterVerified: true,
+      erc8004Verified: true,
       services: [
         { title: 'Full-Stack Web Application', description: 'Complete web app development with React frontend and Node.js backend.', category: 'development', price_usdc: 2500, delivery_days: 14 },
         { title: 'React Component Library', description: 'Custom reusable component library tailored to your brand.', category: 'development', price_usdc: 1200, delivery_days: 7 }
@@ -247,6 +250,9 @@ router.post('/seed', (req, res) => {
       avatar: '⛓️',
       skills: ['Solidity', 'Smart Contracts', 'Ethereum', 'DeFi', 'Hardhat', 'Security Audits'],
       isCoding: true,
+      twitterHandle: 'blockbuilder_eth',
+      twitterVerified: true,
+      erc8004Verified: true,
       services: [
         { title: 'Custom Smart Contract Development', description: 'Professional smart contract development with security-first approach.', category: 'blockchain', price_usdc: 3500, delivery_days: 21 },
         { title: 'Smart Contract Audit', description: 'Comprehensive security audit of your existing smart contracts.', category: 'blockchain', price_usdc: 1800, delivery_days: 7 }
@@ -285,6 +291,7 @@ router.post('/seed', (req, res) => {
       avatar: '🤖',
       skills: ['API Integration', 'Automation', 'Python', 'Webhooks', 'AI Integration', 'Scripting'],
       isCoding: true,
+      erc8004Verified: true,
       services: [
         { title: 'Custom Workflow Automation', description: 'Build automated workflows connecting your favorite tools.', category: 'automation', price_usdc: 1200, delivery_days: 10 },
         { title: 'AI-Powered Integration', description: 'Integrate AI capabilities into your existing systems.', category: 'ai', price_usdc: 2000, delivery_days: 14 }
@@ -368,10 +375,10 @@ router.post('/seed', (req, res) => {
     
     const checkStmt = db.prepare('SELECT id FROM agents WHERE name = ?');
     const insertAgentStmt = db.prepare(`
-      INSERT INTO agents (id, wallet_address, name, bio, avatar_url, trust_tier, jobs_completed, is_coding)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO agents (id, wallet_address, name, bio, avatar_url, trust_tier, jobs_completed, is_coding, twitter_handle, twitter_verified, erc8004_verified)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    const updateAgentStmt = db.prepare('UPDATE agents SET is_coding = ? WHERE name = ?');
+    const updateAgentStmt = db.prepare('UPDATE agents SET is_coding = ?, twitter_handle = ?, twitter_verified = ?, erc8004_verified = ? WHERE name = ?');
     const insertServiceStmt = db.prepare(`
       INSERT INTO services (id, agent_id, title, description, category, price_usdc, delivery_days, active)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -394,7 +401,13 @@ router.post('/seed', (req, res) => {
       
       if (existing) {
         agentId = existing.id;
-        updateAgentStmt.run(agentData.isCoding ? 1 : 0, agentData.name);
+        updateAgentStmt.run(
+          agentData.isCoding ? 1 : 0,
+          agentData.twitterHandle || null,
+          agentData.twitterVerified ? 1 : 0,
+          agentData.erc8004Verified ? 1 : 0,
+          agentData.name
+        );
         updated.push(agentData.name);
       } else {
         agentId = uuidv4();
@@ -403,7 +416,10 @@ router.post('/seed', (req, res) => {
         insertAgentStmt.run(
           agentId, walletAddress, agentData.name, agentData.bio,
           agentData.avatar, 'verified', Math.floor(Math.random() * 20) + 5,
-          agentData.isCoding ? 1 : 0
+          agentData.isCoding ? 1 : 0,
+          agentData.twitterHandle || null,
+          agentData.twitterVerified ? 1 : 0,
+          agentData.erc8004Verified ? 1 : 0
         );
         
         created.push(agentData.name);
