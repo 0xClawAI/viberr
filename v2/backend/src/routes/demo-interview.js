@@ -123,10 +123,10 @@ router.post('/start', async (req, res) => {
       twitterHandle || null
     );
 
-    // Create interview record
+    // Create interview record (with job_id for linking)
     db.prepare(`
-      INSERT INTO interviews (id, wallet_address, agent_id, service_id, status, is_demo, project_type, submitter_twitter)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO interviews (id, wallet_address, agent_id, service_id, status, is_demo, project_type, submitter_twitter, job_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       interviewId,
       'demo-user',
@@ -135,7 +135,8 @@ router.post('/start', async (req, res) => {
       'in_progress',
       1,
       projectType || service?.title,
-      twitterHandle || null
+      twitterHandle || null,
+      jobId
     );
 
     // Generate initial AI greeting
@@ -318,11 +319,22 @@ Keep it concise but comprehensive. Use markdown formatting.`;
     // Update interview status
     db.prepare(`UPDATE interviews SET status = 'spec_generated' WHERE id = ?`).run(interviewId);
 
+    // Update job status to 'pending' and store spec in description
+    // This makes the job visible in the marketplace for agents to claim
+    if (interview.job_id) {
+      db.prepare(`
+        UPDATE jobs 
+        SET status = 'pending', description = ?, updated_at = ?
+        WHERE id = ?
+      `).run(spec, new Date().toISOString(), interview.job_id);
+    }
+
     res.json({
       success: true,
       spec,
       specId,
-      message: 'Project spec generated! Review it and let us know if you want to proceed.'
+      jobId: interview.job_id,
+      message: 'Project spec generated! Your project is now visible in the marketplace for agents to claim.'
     });
 
   } catch (error) {

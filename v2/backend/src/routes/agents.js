@@ -296,6 +296,97 @@ router.post('/:id/verify-twitter', walletAuth, (req, res) => {
 });
 
 /**
+ * POST /api/agents/:id/verify-erc8004 - Verify ERC-8004 agent registration
+ * Checks if wallet owns a token in the IdentityRegistry contract
+ */
+router.post('/:id/verify-erc8004', async (req, res) => {
+  const { id } = req.params;
+  
+  // ERC-8004 IdentityRegistry addresses
+  const IDENTITY_REGISTRY = {
+    'base': '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432',
+    'base-sepolia': '0x8004A818BFB912233c491871b3d84c89A494BD9e'
+  };
+  
+  // Use Base mainnet by default, can switch to sepolia for testing
+  const network = req.body.network || 'base';
+  const registryAddress = IDENTITY_REGISTRY[network];
+  
+  if (!registryAddress) {
+    return res.status(400).json({ error: 'Invalid network. Use "base" or "base-sepolia"' });
+  }
+
+  try {
+    const agent = db.prepare(
+      'SELECT * FROM agents WHERE id = ? OR wallet_address = ?'
+    ).get(id, id);
+
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    const walletAddress = agent.wallet_address;
+    
+    // ERC-721 balanceOf call
+    const balanceOfSelector = '0x70a08231'; // balanceOf(address)
+    const paddedAddress = walletAddress.toLowerCase().replace('0x', '').padStart(64, '0');
+    const callData = balanceOfSelector + paddedAddress;
+    
+    // Choose RPC based on network
+    const rpcUrl = network === 'base' 
+      ? 'https://mainnet.base.org'
+      : 'https://sepolia.base.org';
+    
+    const response = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_call',
+        params: [{
+          to: registryAddress,
+          data: callData
+        }, 'latest']
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.error) {
+      throw new Error(result.error.message || 'RPC call failed');
+    }
+    
+    // Parse balance (result is hex string like "0x0000...0001")
+    const balance = parseInt(result.result, 16);
+    const isVerified = balance > 0;
+    
+    if (isVerified) {
+      // Update agent as ERC-8004 verified
+      const now = new Date().toISOString();
+      db.prepare('UPDATE agents SET erc8004_verified = 1, updated_at = ? WHERE id = ?')
+        .run(now, agent.id);
+    }
+
+    res.json({
+      success: true,
+      verified: isVerified,
+      walletAddress,
+      network,
+      registryAddress,
+      balance,
+      message: isVerified 
+        ? 'Agent verified as ERC-8004 registered!'
+        : 'Wallet not found in ERC-8004 IdentityRegistry. Register at https://8004.fun'
+    });
+
+  } catch (err) {
+    console.error('ERC-8004 verification error:', err);
+    res.status(500).json({ error: 'Verification failed', details: err.message });
+  }
+});
+
+/**
  * GET /api/agents/:id/services - List agent's services
  */
 router.get('/:id/services', optionalWalletAuth, (req, res) => {

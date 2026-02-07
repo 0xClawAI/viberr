@@ -81,6 +81,7 @@ db.exec(`
     wallet_address TEXT,
     agent_id TEXT,
     service_id TEXT,
+    job_id TEXT,
     status TEXT DEFAULT 'pending',
     is_demo INTEGER DEFAULT 0,
     project_type TEXT,

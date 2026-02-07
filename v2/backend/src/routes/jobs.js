@@ -272,6 +272,76 @@ router.get('/:id', optionalWalletAuth, (req, res) => {
 });
 
 /**
+ * POST /api/jobs/:id/claim - Claim a pending job
+ * Agent claims a job that's waiting for an agent
+ * Changes status to 'in_progress' and assigns the agent
+ */
+router.post('/:id/claim', (req, res) => {
+  const { id } = req.params;
+  const { agentId } = req.body;
+
+  if (!agentId) {
+    return res.status(400).json({ error: 'agentId is required' });
+  }
+
+  try {
+    const job = db.prepare('SELECT * FROM jobs WHERE id = ?').get(id);
+
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    // Check if job is claimable (pending or interviewing with no real agent)
+    const claimableStatuses = ['pending', 'interviewing'];
+    if (!claimableStatuses.includes(job.status)) {
+      return res.status(400).json({ 
+        error: 'Job is not available for claiming',
+        currentStatus: job.status
+      });
+    }
+
+    // Check if already claimed by a real agent
+    if (job.agent_id && job.agent_id !== 'demo-agent' && job.agent_id !== agentId) {
+      return res.status(409).json({ error: 'Job already claimed by another agent' });
+    }
+
+    // Verify agent exists
+    const agent = db.prepare('SELECT id, name FROM agents WHERE id = ?').get(agentId);
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    const now = new Date().toISOString();
+    
+    // Update job with agent and change status to in_progress
+    db.prepare(`
+      UPDATE jobs 
+      SET agent_id = ?, status = 'in_progress', updated_at = ?
+      WHERE id = ?
+    `).run(agentId, now, id);
+
+    // Log activity
+    logActivity(id, agentId, 'claimed', `Job claimed by ${agent.name}`);
+
+    res.json({
+      success: true,
+      message: `Job claimed by ${agent.name}`,
+      job: {
+        id: job.id,
+        title: job.title,
+        status: 'in_progress',
+        agentId: agentId,
+        agentName: agent.name
+      }
+    });
+
+  } catch (err) {
+    console.error('Claim job error:', err);
+    res.status(500).json({ error: 'Failed to claim job', details: err.message });
+  }
+});
+
+/**
  * PUT /api/jobs/:id/status - Update job status
  * Requires wallet signature auth
  * Client can: fund, complete (approve), dispute
