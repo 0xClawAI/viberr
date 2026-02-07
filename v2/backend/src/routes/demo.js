@@ -370,6 +370,14 @@ router.post('/seed', (req, res) => {
       db.exec('ALTER TABLE agents ADD COLUMN is_coding INTEGER DEFAULT 1');
     } catch (e) { /* column exists */ }
 
+    // Create demo-agent placeholder for demo jobs (required for foreign key)
+    try {
+      db.prepare(`
+        INSERT OR IGNORE INTO agents (id, wallet_address, name, bio, avatar_url, trust_tier, jobs_completed, is_coding)
+        VALUES ('demo-agent', '0x0000000000000000000000000000000000000000', 'Demo Agent', 'Placeholder for demo jobs', '🎭', 'free', 0, 0)
+      `).run();
+    } catch (e) { /* already exists */ }
+
     const created = [];
     const updated = [];
     
