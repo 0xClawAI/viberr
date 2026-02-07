@@ -24,6 +24,9 @@ const mockAgents = [
     avatar: '👨‍💻',
     skills: ['React', 'Node.js', 'TypeScript', 'PostgreSQL', 'API Design', 'Full-Stack'],
     isCoding: true,
+    twitterHandle: 'codecraft_agent',
+    twitterVerified: true,
+    erc8004Verified: true,
     services: [
       {
         title: 'Full-Stack Web Application',
@@ -47,6 +50,9 @@ const mockAgents = [
     avatar: '⛓️',
     skills: ['Solidity', 'Smart Contracts', 'Ethereum', 'DeFi', 'Hardhat', 'Security Audits'],
     isCoding: true,
+    twitterHandle: 'blockbuilder_eth',
+    twitterVerified: true,
+    erc8004Verified: true,
     services: [
       {
         title: 'Custom Smart Contract Development',
@@ -93,6 +99,7 @@ const mockAgents = [
     avatar: '🤖',
     skills: ['API Integration', 'Automation', 'Python', 'Webhooks', 'AI Integration', 'Scripting'],
     isCoding: true,
+    erc8004Verified: true,
     services: [
       {
         title: 'Custom Workflow Automation',
@@ -250,15 +257,23 @@ const mockAgents = [
 function seedMockAgents() {
   console.log('🌱 Starting mock agents seed...\n');
 
-  // First, add is_coding column if it doesn't exist
-  try {
-    db.exec('ALTER TABLE agents ADD COLUMN is_coding INTEGER DEFAULT 1');
-    console.log('✅ Added is_coding column to agents table\n');
-  } catch (e) {
-    if (!e.message.includes('duplicate column')) {
-      console.log('ℹ️  is_coding column already exists\n');
+  // Add columns if they don't exist
+  const columnsToAdd = [
+    { name: 'is_coding', type: 'INTEGER DEFAULT 1' },
+    { name: 'twitter_handle', type: 'TEXT' },
+    { name: 'twitter_verified', type: 'INTEGER DEFAULT 0' },
+    { name: 'erc8004_verified', type: 'INTEGER DEFAULT 0' }
+  ];
+  
+  for (const col of columnsToAdd) {
+    try {
+      db.exec(`ALTER TABLE agents ADD COLUMN ${col.name} ${col.type}`);
+      console.log(`✅ Added ${col.name} column to agents table`);
+    } catch (e) {
+      // Column already exists - ignore
     }
   }
+  console.log('');
 
   const createdAgents = [];
   const skippedAgents = [];
@@ -266,11 +281,11 @@ function seedMockAgents() {
   // Prepare statements
   const checkAgentStmt = db.prepare('SELECT id FROM agents WHERE name = ?');
   const insertAgentStmt = db.prepare(`
-    INSERT INTO agents (id, wallet_address, name, bio, avatar_url, trust_tier, jobs_completed, is_coding)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO agents (id, wallet_address, name, bio, avatar_url, trust_tier, jobs_completed, is_coding, twitter_handle, twitter_verified, erc8004_verified)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const updateAgentStmt = db.prepare(`
-    UPDATE agents SET is_coding = ? WHERE name = ?
+    UPDATE agents SET is_coding = ?, twitter_handle = ?, twitter_verified = ?, erc8004_verified = ? WHERE name = ?
   `);
   const insertServiceStmt = db.prepare(`
     INSERT INTO services (id, agent_id, title, description, category, price_usdc, delivery_days, active)
@@ -283,9 +298,18 @@ function seedMockAgents() {
       // Check if agent already exists
       const existing = checkAgentStmt.get(agentData.name);
       if (existing) {
-        // Update is_coding flag for existing agents
-        updateAgentStmt.run(agentData.isCoding ? 1 : 0, agentData.name);
-        console.log(`⏭️  Updated ${agentData.name} - is_coding=${agentData.isCoding}`);
+        // Update is_coding and verification flags for existing agents
+        updateAgentStmt.run(
+          agentData.isCoding ? 1 : 0,
+          agentData.twitterHandle || null,
+          agentData.twitterVerified ? 1 : 0,
+          agentData.erc8004Verified ? 1 : 0,
+          agentData.name
+        );
+        const badges = [];
+        if (agentData.twitterVerified) badges.push('🐦');
+        if (agentData.erc8004Verified) badges.push('8004');
+        console.log(`⏭️  Updated ${agentData.name} ${badges.join(' ')}`);
         skippedAgents.push(agentData.name);
         continue;
       }
@@ -302,7 +326,10 @@ function seedMockAgents() {
         agentData.avatar,
         'verified',
         Math.floor(Math.random() * 20) + 5,
-        agentData.isCoding ? 1 : 0
+        agentData.isCoding ? 1 : 0,
+        agentData.twitterHandle || null,
+        agentData.twitterVerified ? 1 : 0,
+        agentData.erc8004Verified ? 1 : 0
       );
 
       const codingLabel = agentData.isCoding ? '💻 CODING' : '📋 OTHER';

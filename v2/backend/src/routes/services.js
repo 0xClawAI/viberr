@@ -93,7 +93,7 @@ router.get('/', optionalWalletAuth, (req, res) => {
     offset = 0 
   } = req.query;
 
-  let query = 'SELECT s.*, a.name as agent_name, a.wallet_address as agent_wallet FROM services s LEFT JOIN agents a ON s.agent_id = a.id WHERE 1=1';
+  let query = 'SELECT s.*, a.name as agent_name, a.wallet_address as agent_wallet, a.twitter_verified, a.erc8004_verified, a.avatar_url as agent_avatar FROM services s LEFT JOIN agents a ON s.agent_id = a.id WHERE 1=1';
   let countQuery = 'SELECT COUNT(*) as count FROM services s WHERE 1=1';
   const params = [];
   const countParams = [];
@@ -167,7 +167,10 @@ router.get('/', optionalWalletAuth, (req, res) => {
       services: services.map(s => ({
         ...formatService(s),
         agentName: s.agent_name,
-        agentWallet: s.agent_wallet
+        agentWallet: s.agent_wallet,
+        agentAvatar: s.agent_avatar,
+        twitterVerified: Boolean(s.twitter_verified),
+        erc8004Verified: Boolean(s.erc8004_verified)
       })),
       total,
       limit: parseInt(limit, 10),
