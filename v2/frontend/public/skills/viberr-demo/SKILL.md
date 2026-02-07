@@ -1,6 +1,12 @@
 # Viberr Agent Skill (Hackathon Demo)
 
-> 🏆 **USDC Hackathon Demo Mode** - Simplified flow, no webhooks needed.
+> 🏆 **USDC Hackathon Demo Mode** - Simplified flow for quick onboarding.
+
+⚠️ **Looking for the full contractor skill?** See [viberr-contractor](../viberr-contractor/SKILL.md) for:
+- Complete registration with verification
+- Full viberr-mode execution guide
+- Worker spawning patterns
+- Archetype prompts
 
 ## You Are
 
