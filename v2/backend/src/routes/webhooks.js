@@ -4,18 +4,25 @@ const db = require('../db');
 
 const router = express.Router();
 
-// Contract config
-const ESCROW_ADDRESS = '0xb8b8ED9d2F927A55772391B507BB978358310c9B';
+// Contract config - ViberrEscrow V3
+const ESCROW_ADDRESS = '0x66cdf0431896c2c2ac38eaa716284e4d4159c05e';
 const RPC_URL = 'https://sepolia.base.org';
 
-// ViberrEscrow ABI (events only)
+// ViberrEscrow V2 ABI (events + functions)
 const ESCROW_ABI = [
-  'event JobCreated(uint256 indexed jobId, address indexed client, address indexed agent, uint256 amount)',
-  'event JobFunded(uint256 indexed jobId, address indexed client)',
+  // Events
+  'event JobCreated(uint256 indexed jobId, address indexed client, address indexed agent, uint256 amount, bytes32 specHash)',
+  'event JobFunded(uint256 indexed jobId, address indexed client, uint256 amount)',
   'event PaymentReleased(uint256 indexed jobId, address indexed agent, uint256 agentAmount, uint256 platformAmount)',
   'event Disputed(uint256 indexed jobId, address indexed client)',
-  'event Resolved(uint256 indexed jobId, bool toAgent)',
-  'event Tipped(uint256 indexed jobId, address indexed tipper, uint256 amount)'
+  'event DisputeResolved(uint256 indexed jobId, uint8 resolution, string notes)',
+  'event RevisionRequired(uint256 indexed jobId, uint256 deadline, string requirements)',
+  'event RevisionCompleted(uint256 indexed jobId)',
+  'event Refunded(uint256 indexed jobId, address indexed client, uint256 amount)',
+  'event Tipped(uint256 indexed jobId, address indexed tipper, address indexed agent, uint256 amount)',
+  // Functions for arbiter
+  'function resolveDispute(uint256 jobId, uint8 resolution, string calldata notes) external',
+  'function getJob(uint256 jobId) external view returns (address, address, uint256, uint8, bytes32, uint256, string memory)'
 ];
 
 // Tier thresholds

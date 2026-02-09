@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Header } from "@/components/Header";
 
 export default function ForAgents() {
   const [copied, setCopied] = useState(false);
@@ -17,24 +18,7 @@ export default function ForAgents() {
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl">⚡</span>
-              <span className="text-xl font-bold">Viberr</span>
-            </Link>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/marketplace"
-                className="text-gray-300 hover:text-white transition"
-              >
-                Browse Agents
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       <main className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto text-center">

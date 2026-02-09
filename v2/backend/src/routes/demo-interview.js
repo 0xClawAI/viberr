@@ -1,12 +1,13 @@
+// v2.1.0 - Using Claude Opus 4.6 for premium interview experience
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const crypto = require('crypto');
-const OpenAI = require('openai');
+const Anthropic = require('@anthropic-ai/sdk');
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+// Initialize Anthropic
+const anthropic = new Anthropic.default({
+  apiKey: process.env.ANTHROPIC_API_KEY
 });
 
 // Interview system prompt - designed to WOW users
@@ -42,7 +43,7 @@ After 4-6 exchanges, naturally transition to: "I think I have a good picture now
 
 Remember: This interview sells Viberr. Make them think "Wow, this is better than talking to most human freelancers."`;
 
-// Generate AI response for interview
+// Generate AI response for interview using Claude Opus 4.6 ($5/$25 per M tokens)
 async function generateAIResponse(messages, service, projectType) {
   const conversationHistory = messages.map(m => ({
     role: m.role === 'user' ? 'user' : 'assistant',
@@ -57,19 +58,16 @@ async function generateAIResponse(messages, service, projectType) {
   const systemMessage = `${SYSTEM_PROMPT}\n\nCONTEXT: ${serviceContext}`;
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemMessage },
-        ...conversationHistory
-      ],
-      temperature: 0.7,
-      max_tokens: 500
+    const response = await anthropic.messages.create({
+      model: 'claude-opus-4-6',
+      max_tokens: 300,
+      system: systemMessage,
+      messages: conversationHistory
     });
 
-    return completion.choices[0].message.content;
+    return response.content[0].text;
   } catch (error) {
-    console.error('OpenAI error:', error);
+    console.error('Anthropic error:', error);
     throw new Error('Failed to generate AI response');
   }
 }
@@ -98,23 +96,46 @@ router.post('/start', async (req, res) => {
       service = db.prepare('SELECT * FROM services WHERE id = ?').get(serviceId);
     }
 
-    // Get agent if provided
+    // Get agent if provided - try by ID first, then by name (case-insensitive)
     let agent = null;
+    let resolvedAgentId = agentId;
     if (agentId) {
       agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(agentId);
+      if (!agent) {
+        // Try by name (frontend might send "codecraft" instead of UUID)
+        agent = db.prepare('SELECT * FROM agents WHERE LOWER(name) = LOWER(?)').get(agentId);
+        if (agent) {
+          resolvedAgentId = agent.id;
+        }
+      }
     }
 
     const interviewId = crypto.randomUUID();
     const jobId = crypto.randomUUID();
 
-    // Create demo job
+    // Create demo job - use first available agent if none matched
+    let finalAgentId = agent ? resolvedAgentId : null;
+    if (!finalAgentId) {
+      const defaultAgent = db.prepare('SELECT id FROM agents LIMIT 1').get();
+      if (defaultAgent) {
+        finalAgentId = defaultAgent.id;
+        agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(finalAgentId);
+      } else {
+        // No agents at all - create a placeholder
+        finalAgentId = crypto.randomUUID();
+        db.prepare('INSERT INTO agents (id, name, bio, wallet_address) VALUES (?, ?, ?, ?)').run(
+          finalAgentId, 'CodeCraft', 'Full-stack AI developer', '0x0000000000000000000000000000000000000000'
+        );
+        agent = { id: finalAgentId, name: 'CodeCraft' };
+      }
+    }
     db.prepare(`
       INSERT INTO jobs (id, client_wallet, agent_id, title, description, price_usdc, status, is_demo, submitter_twitter)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       jobId,
       'demo-user',
-      agentId || 'demo-agent',
+      finalAgentId,
       projectType || service?.title || 'Demo Project',
       description || '',
       0,
@@ -130,7 +151,7 @@ router.post('/start', async (req, res) => {
     `).run(
       interviewId,
       'demo-user',
-      agentId || 'demo-agent',
+      finalAgentId,
       serviceId || null,
       'in_progress',
       1,
@@ -139,15 +160,13 @@ router.post('/start', async (req, res) => {
       jobId
     );
 
-    // Generate initial AI greeting
+    // Generate initial AI greeting - keep it SHORT
     const greetingPrompt = description && description.trim() && !description.includes('project')
-      ? `The client just started an interview. They described their project as: "${description}". 
-         Greet them warmly, acknowledge what they've shared, and ask 1-2 thoughtful follow-up questions to dig deeper.
-         Keep your response under 150 words. Be conversational, not formal.`
-      : `The client just started an interview session. They haven't described their project yet.
-         Greet them warmly and enthusiastically! Ask them what they'd like to build today.
-         Be friendly and curious - make them excited to share their idea.
-         Keep your response under 100 words. Be conversational, not formal.`;
+      ? `The client described their project as: "${description}". 
+         Give a brief, friendly greeting (1-2 sentences max), then ask ONE focused follow-up question.
+         Keep your ENTIRE response under 50 words. Be concise.`
+      : `Greet the client briefly (1 sentence) and ask what they want to build.
+         Keep your ENTIRE response under 30 words. Be friendly but concise.`;
 
     const greeting = await generateAIResponse(
       [{ role: 'user', content: greetingPrompt }],
@@ -297,17 +316,16 @@ Generate a spec with these sections:
 
 Keep it concise but comprehensive. Use markdown formatting.`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    const response = await anthropic.messages.create({
+      model: 'claude-opus-4-6',
+      max_tokens: 2000,
+      system: 'You are a technical product manager writing clear, actionable project specifications.',
       messages: [
-        { role: 'system', content: 'You are a technical product manager writing clear, actionable project specifications.' },
         { role: 'user', content: specPrompt }
-      ],
-      temperature: 0.5,
-      max_tokens: 1500
+      ]
     });
 
-    const spec = completion.choices[0].message.content;
+    const spec = response.content[0].text;
 
     // Save spec
     const specId = crypto.randomUUID().split('-')[0];
@@ -319,12 +337,12 @@ Keep it concise but comprehensive. Use markdown formatting.`;
     // Update interview status
     db.prepare(`UPDATE interviews SET status = 'spec_generated' WHERE id = ?`).run(interviewId);
 
-    // Update job status to 'pending' and store spec in description
+    // Update job status to 'pending' and store spec
     // This makes the job visible in the marketplace for agents to claim
     if (interview.job_id) {
       db.prepare(`
         UPDATE jobs 
-        SET status = 'pending', description = ?, updated_at = ?
+        SET status = 'pending', spec = ?, updated_at = ?
         WHERE id = ?
       `).run(spec, new Date().toISOString(), interview.job_id);
     }
@@ -346,15 +364,23 @@ Keep it concise but comprehensive. Use markdown formatting.`;
 /**
  * GET /api/demo-interview/:id
  * Get interview state and messages
+ * :id can be interview_id OR job_id
  */
 router.get('/:id', (req, res) => {
   try {
-    const interviewId = req.params.id;
+    const id = req.params.id;
 
-    const interview = db.prepare('SELECT * FROM interviews WHERE id = ?').get(interviewId);
+    // Try to find by interview_id first, then by job_id
+    let interview = db.prepare('SELECT * FROM interviews WHERE id = ?').get(id);
+    if (!interview) {
+      // Try finding by job_id
+      interview = db.prepare('SELECT * FROM interviews WHERE job_id = ?').get(id);
+    }
     if (!interview) {
       return res.status(404).json({ error: 'Interview not found' });
     }
+    
+    const interviewId = interview.id;
 
     const messages = db.prepare(`
       SELECT id, role, content, created_at FROM interview_messages 

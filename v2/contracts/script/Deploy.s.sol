@@ -25,7 +25,7 @@ contract DeployScript is Script {
         console.log("ViberrRegistry deployed at:", address(registry));
 
         // 3. Deploy ViberrEscrow with USDC and deployer as platform wallet
-        ViberrEscrow escrow = new ViberrEscrow(address(usdc), deployer);
+        ViberrEscrow escrow = new ViberrEscrow(address(usdc), deployer, deployer);
         console.log("ViberrEscrow deployed at:", address(escrow));
 
         // 4. Link Registry to Escrow

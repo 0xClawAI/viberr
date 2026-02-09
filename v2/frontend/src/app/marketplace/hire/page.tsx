@@ -3,6 +3,7 @@ import { API_BASE_URL } from "@/lib/config";
 
 import Link from "next/link";
 import { useState, useEffect, useRef, Suspense, useCallback } from "react";
+import { useAccount } from "wagmi";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PaymentStep } from "@/components/PaymentStep";
 import { SimpleMarkdown } from "@/components/SimpleMarkdown";
@@ -14,6 +15,7 @@ interface Agent {
   name: string;
   avatar: string;
   tier: "free" | "rising" | "verified" | "premium";
+  walletAddress?: `0x${string}`; // Agent's wallet for escrow
 }
 
 interface Service {
@@ -48,10 +50,13 @@ interface InterviewState {
 type SSEStatus = "disconnected" | "connecting" | "connected" | "error";
 
 // Mock data for when backend is unavailable
+// Mock wallet addresses for demo (receiving escrow payments on testnet)
+const DEMO_WALLET = "0xD50406FcD7115cC55A88d77d3E62cE39c9fA99B1" as `0x${string}`; // 0xClaw's wallet
+
 const MOCK_AGENTS: Record<string, Agent> = {
-  "agent-1": { id: "agent-1", name: "CodeCraft", avatar: "🤖", tier: "premium" },
-  "agent-2": { id: "agent-2", name: "DataMind", avatar: "🧠", tier: "verified" },
-  "agent-3": { id: "agent-3", name: "DesignPro", avatar: "🎨", tier: "premium" },
+  "agent-1": { id: "agent-1", name: "CodeCraft", avatar: "🤖", tier: "premium", walletAddress: DEMO_WALLET },
+  "agent-2": { id: "agent-2", name: "DataMind", avatar: "🧠", tier: "verified", walletAddress: DEMO_WALLET },
+  "agent-3": { id: "agent-3", name: "DesignPro", avatar: "🎨", tier: "premium", walletAddress: DEMO_WALLET },
 };
 
 const MOCK_SERVICES: Record<string, Service[]> = {
@@ -152,15 +157,58 @@ function AgentServiceSkeleton() {
   );
 }
 
+// Interview transcript for spec review page
+function InterviewTranscript({ messages, agentName }: { messages: Message[]; agentName: string }) {
+  const [isOpen, setIsOpen] = useState(true);
+  
+  return (
+    <div className="mb-6 bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition"
+      >
+        <div className="flex items-center gap-2">
+          <span>💬</span>
+          <span className="font-medium text-white">Interview Chat</span>
+          <span className="text-gray-500 text-sm">{messages.length} messages</span>
+        </div>
+        <svg className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="px-4 pb-4 space-y-3 max-h-[400px] overflow-y-auto">
+          {messages.map((msg) => (
+            <div key={msg.id} className={`flex ${msg.type === "answer" ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                msg.type === "answer" 
+                  ? "bg-emerald-500/20 text-emerald-100" 
+                  : "bg-white/10 text-gray-300"
+              }`}>
+                {msg.type !== "answer" && (
+                  <p className="text-emerald-400 text-xs font-medium mb-1">{agentName}</p>
+                )}
+                <p className="whitespace-pre-wrap">{msg.content}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Agent/Service info card for Step 1
 function AgentServiceCard({
   agent,
   service,
   onContinue,
+  isLoading,
 }: {
   agent: Agent | null;
   service: Service | null;
   onContinue: () => void;
+  isLoading?: boolean;
 }) {
   if (!agent) {
     return (
@@ -220,9 +268,17 @@ function AgentServiceCard({
 
       <button
         onClick={onContinue}
-        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-semibold transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+        disabled={isLoading}
+        className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
       >
-        Start Interview
+        {isLoading ? (
+          <>
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            Starting Interview...
+          </>
+        ) : (
+          <>Start Interview</>
+        )}
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
@@ -761,6 +817,7 @@ function SpecDisplay({
 function HirePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { address, isConnected } = useAccount();
   const agentId = searchParams.get("agent") || "agent-1";
   const serviceId = searchParams.get("service");
 
@@ -800,9 +857,65 @@ function HirePageContent() {
   // Mock question index for offline mode
   const mockQuestionSetIndexRef = useRef(0);
 
+  // --- localStorage persistence for interview state ---
+  const STORAGE_KEY = `viberr_hire_${agentId}_${serviceId || "default"}`;
+
+  // Restore state from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+      const s = JSON.parse(saved);
+      // Only restore if less than 2 hours old
+      if (s.savedAt && Date.now() - s.savedAt > 2 * 60 * 60 * 1000) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+      if (s.currentStep) setCurrentStep(s.currentStep);
+      if (s.spec) setSpec(s.spec);
+      if (s.demoJobId) setDemoJobId(s.demoJobId);
+      if (s.interview) {
+        setInterview({
+          ...s.interview,
+          messages: (s.interview.messages || []).map((m: Record<string, unknown>) => ({
+            ...m,
+            timestamp: new Date(m.timestamp as string),
+          })),
+        });
+      }
+    } catch {
+      // ignore parse errors
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save state to localStorage on changes
+  useEffect(() => {
+    if (currentStep <= 1 && !interview.id) return; // Don't save initial state
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        currentStep,
+        spec,
+        demoJobId,
+        interview: {
+          id: interview.id,
+          currentQuestion: interview.currentQuestion,
+          currentQuestions: interview.currentQuestions,
+          questionIndex: interview.questionIndex,
+          totalQuestions: interview.totalQuestions,
+          messages: interview.messages,
+          isComplete: interview.isComplete,
+        },
+        savedAt: Date.now(),
+      }));
+    } catch {
+      // localStorage full or unavailable
+    }
+  }, [currentStep, spec, demoJobId, interview, STORAGE_KEY]);
+
   // Connect to SSE when interview starts
   const connectSSE = useCallback(() => {
-    if (!interview.id || useFallbackMode) return;
+    if (!interview.id || useFallbackMode || isDemoMode) return;
 
     // Close existing connection
     if (eventSourceRef.current) {
@@ -887,7 +1000,7 @@ function HirePageContent() {
 
   // Effect to connect SSE when interview ID changes
   useEffect(() => {
-    if (interview.id && !useFallbackMode) {
+    if (interview.id && !useFallbackMode && !isDemoMode) {
       const cleanup = connectSSE();
       return cleanup;
     }
@@ -970,6 +1083,7 @@ function HirePageContent() {
           name: agentData.name,
           avatar: agentData.avatarUrl || agentData.avatar || "🤖",
           tier: agentData.trustTier || agentData.tier || "free",
+          walletAddress: agentData.walletAddress || agentData.wallet_address,
         });
 
         if (serviceId) {
@@ -1004,13 +1118,13 @@ function HirePageContent() {
     fetchData();
   }, [agentId, serviceId]);
 
-  // Start interview - shows Twitter modal first in demo mode
+  // Start interview - go straight to demo interview in demo mode
   const startInterview = async () => {
     if (!agent) return;
     
     if (isDemoMode) {
-      // Show Twitter modal first
-      setShowTwitterModal(true);
+      // Skip Twitter modal, start directly
+      await startDemoInterview("");
       return;
     }
     
@@ -1360,65 +1474,38 @@ ${answers[3] || "None specified"}
     }
   };
 
-  // Continue to payment (step 4) or skip if free/demo
+  // Continue to payment (step 4) or demo dashboard
   const continueToPayment = async () => {
-    // Demo mode - redirect to demo dashboard
-    if (isDemoMode && demoJobId) {
-      // Store the spec in localStorage for the demo dashboard
+    // No wallet connected → skip payment, go to demo dashboard
+    if (!isConnected || !address) {
+      goToDemoDashboard();
+      return;
+    }
+    
+    // Wallet connected → show payment flow at $1 USDC
+    setCurrentStep(4);
+  };
+
+  // Go to demo dashboard (stores spec in localStorage)
+  const goToDemoDashboard = () => {
+    if (demoJobId) {
       const demoData = {
         id: demoJobId,
         title: service?.title || "Demo Project",
         description: service?.description || "",
         spec: editedSpec || spec,
-        status: "ready_to_start",
+        status: "pending",
         agent: {
           name: agent?.name || "AI Agent",
           avatar: agent?.avatar || "🤖",
           bio: "AI-powered development",
         },
-        twitter: twitterHandle,
         createdAt: new Date().toISOString(),
       };
       localStorage.setItem(`viberr_demo_${demoJobId}`, JSON.stringify(demoData));
-      
-      // Redirect to demo dashboard
+      localStorage.removeItem(STORAGE_KEY); // Clear interview state
       router.push(`/demo/${demoJobId}`);
-      return;
     }
-    
-    // If service is free, skip payment and create job directly
-    if (service && service.price === 0) {
-      setIsLoading(true);
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/jobs`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            agentId: agent?.id,
-            serviceId: service.id,
-            clientWallet: "0x0000000000000000000000000000000000000000",
-            title: `Free Trial: ${service.title}`,
-            requirements: spec || editedSpec || "Free trial task",
-            priceUsdc: 0,
-          }),
-        });
-        const data = await res.json();
-        if (res.ok && (data.job?.id || data.id)) {
-          window.location.href = `/jobs/${data.job?.id || data.id}`;
-          return;
-        } else {
-          console.error("Job creation response:", data);
-          setError(data.error || "Failed to create job. Please try again.");
-        }
-      } catch (err) {
-        console.error("Failed to create free job:", err);
-        setError("Failed to create job. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-      return; // Don't fall through to payment
-    }
-    setCurrentStep(4);
   };
 
   // Retry on error
@@ -1517,7 +1604,7 @@ ${answers[3] || "None specified"}
 
           {/* Step Content */}
           {currentStep === 1 && (
-            <AgentServiceCard agent={agent} service={service} onContinue={startInterview} />
+            <AgentServiceCard agent={agent} service={service} onContinue={startInterview} isLoading={isLoading} />
           )}
 
           {currentStep === 2 && (
@@ -1528,7 +1615,7 @@ ${answers[3] || "None specified"}
               onBack={goBack}
               isLoading={isLoading}
               isAgentTyping={isAgentTyping}
-              sseStatus={useFallbackMode ? "connected" : sseStatus}
+              sseStatus={(useFallbackMode || isDemoMode) ? "connected" : sseStatus}
               onReconnect={handleReconnectSSE}
               onFallback={handleFallbackMode}
               onAcceptSpec={() => {
@@ -1546,31 +1633,36 @@ ${answers[3] || "None specified"}
           )}
 
           {currentStep === 3 && (
-            <SpecDisplay
-              spec={spec}
-              onEdit={setSpec}
-              onBack={goBack}
-              onContinue={continueToPayment}
-              isEditing={isEditing}
-              editedSpec={editedSpec}
-              setEditedSpec={setEditedSpec}
-              setIsEditing={setIsEditing}
-              isFree={service?.price === 0}
-            />
+            <>
+              {/* Interview Chat Transcript */}
+              {interview.messages.length > 0 && (
+                <InterviewTranscript messages={interview.messages} agentName={agent?.name || "Agent"} />
+              )}
+              <SpecDisplay
+                spec={spec}
+                onEdit={setSpec}
+                onBack={goBack}
+                onContinue={continueToPayment}
+                isEditing={isEditing}
+                editedSpec={editedSpec}
+                setEditedSpec={setEditedSpec}
+                setIsEditing={setIsEditing}
+                isFree={service?.price === 0}
+              />
+            </>
           )}
 
           {currentStep === 4 && (
             <PaymentStep
-              servicePrice={service?.price || 99}
+              servicePrice={1}
               serviceName={service?.title || "Custom Project"}
               agentName={agent?.name || "Agent"}
               agentId={agentId}
+              agentWallet={agent?.walletAddress || DEMO_WALLET}
               onSuccess={(jobId) => {
                 console.log("Payment successful, job ID:", jobId);
-                // Redirect to dashboard after success
-                setTimeout(() => {
-                  router.push("/dashboard");
-                }, 2000);
+                localStorage.removeItem(STORAGE_KEY);
+                router.push(`/demo/${demoJobId || jobId}`);
               }}
             />
           )}

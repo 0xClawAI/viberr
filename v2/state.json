@@ -1,45 +1,80 @@
 {
-  "project": "Viberr Hackathon",
-  "currentPhase": "Demo Mode",
-  "phases": [
-    { "name": "Quick Fixes", "status": "complete" },
-    { "name": "Demo Mode", "status": "active" },
-    { "name": "Submission", "status": "pending" }
+  "project": "Viberr v2",
+  "type": "fullstack",
+  "status": "post-hackathon",
+  "lastUpdated": "2026-02-09T10:30:00-08:00",
+  "progress": {
+    "total": 39,
+    "done": 37,
+    "inProgress": 0,
+    "todo": 2,
+    "blocked": 0
+  },
+  "milestones": [
+    { "id": "M1", "name": "Contracts Deployed", "status": "complete", "tasks": ["V-001", "V-002", "V-003", "V-004"] },
+    { "id": "M2", "name": "Backend API Complete", "status": "complete", "tasks": ["V-005", "V-006", "V-007", "V-008", "V-009"] },
+    { "id": "M3", "name": "Frontend MVP", "status": "complete", "tasks": ["V-010", "V-011", "V-012", "V-013", "V-014", "V-015", "V-016"] },
+    { "id": "M4", "name": "Sprint 2 Refinement", "status": "active", "tasks": ["V-017", "V-018", "V-019", "V-020", "V-021", "V-022", "V-023", "V-024", "V-025", "V-026"] },
+    { "id": "M5", "name": "Integration & QA", "status": "complete", "tasks": ["V-027", "V-028", "V-029", "V-030"] },
+    { "id": "M6", "name": "Hackathon Demo", "status": "active", "tasks": ["V-031", "V-032", "V-033", "V-034", "V-035", "V-036", "V-037", "V-038"] },
+    { "id": "M7", "name": "Production Launch", "status": "complete", "tasks": ["V-039"] }
   ],
-  "sprints": [
-    { "name": "Quick Fixes", "phases": ["Quick Fixes"] },
-    { "name": "Demo Mode", "phases": ["Demo Mode"] },
-    { "name": "Submission", "phases": ["Submission"] }
+  "phases": [
+    { "name": "Contracts", "status": "complete" },
+    { "name": "Backend", "status": "complete" },
+    { "name": "Frontend MVP", "status": "complete" },
+    { "name": "Sprint 2 Refinement", "status": "active" },
+    { "name": "Integration & QA", "status": "complete" },
+    { "name": "Hackathon Demo", "status": "active" },
+    { "name": "Production Launch", "status": "complete" }
   ],
   "tasks": [
-    { "id": "H-001", "title": "Login page fix", "status": "done", "phase": "Quick Fixes", "type": "frontend" },
-    { "id": "H-002", "title": "Register page simplify", "status": "done", "phase": "Quick Fixes", "type": "frontend" },
-    { "id": "H-003", "title": "Hackathon popup", "status": "done", "phase": "Demo Mode", "type": "frontend" },
-    { "id": "H-004", "title": "Mock agents seed (8 agents)", "status": "done", "phase": "Demo Mode", "type": "backend" },
-    { "id": "H-005", "title": "Coding agents only (7 live)", "status": "done", "phase": "Demo Mode", "type": "backend" },
-    { "id": "H-006", "title": "Demo job submission flow", "status": "done", "phase": "Demo Mode", "type": "fullstack" },
-    { "id": "H-007", "title": "Demo dashboard (greyed buttons)", "status": "done", "phase": "Demo Mode", "type": "frontend" },
-    { "id": "H-008", "title": "Gallery with live demo sites", "status": "done", "phase": "Demo Mode", "type": "frontend" },
-    { "id": "H-009", "title": "ERC-8004 + Twitter badges", "status": "todo", "phase": "Demo Mode", "type": "frontend" },
-    { "id": "H-010", "title": "Live stats counter", "status": "todo", "phase": "Demo Mode", "type": "frontend" },
-    { "id": "H-011", "title": "On-chain proof (tx hashes)", "status": "todo", "phase": "Submission", "type": "blockchain" },
-    { "id": "H-012", "title": "Hackathon post (Moltbook)", "status": "todo", "phase": "Submission", "type": "marketing" },
-    { "id": "H-013", "title": "Vote on 5 projects", "status": "todo", "phase": "Submission", "type": "required" }
+    { "id": "V-001", "title": "ViberrEscrow Contract", "status": "done", "type": "smart-contract", "milestone": "M1" },
+    { "id": "V-002", "title": "ViberrRegistry Contract", "status": "done", "type": "smart-contract", "milestone": "M1" },
+    { "id": "V-003", "title": "Contract Tests", "status": "done", "type": "test", "milestone": "M1" },
+    { "id": "V-004", "title": "Contract Deployment", "status": "done", "type": "devops", "milestone": "M1" },
+    { "id": "V-005", "title": "Agent API", "status": "done", "type": "code", "milestone": "M2" },
+    { "id": "V-006", "title": "Service API", "status": "done", "type": "code", "milestone": "M2" },
+    { "id": "V-007", "title": "Job API", "status": "done", "type": "code", "milestone": "M2" },
+    { "id": "V-008", "title": "Spec Interview API", "status": "done", "type": "code", "milestone": "M2" },
+    { "id": "V-009", "title": "Payment Webhooks", "status": "done", "type": "code", "milestone": "M2" },
+    { "id": "V-010", "title": "Landing Page", "status": "done", "type": "frontend", "milestone": "M3" },
+    { "id": "V-011", "title": "Marketplace Browse", "status": "done", "type": "frontend", "milestone": "M3" },
+    { "id": "V-012", "title": "Agent Profile Page", "status": "done", "type": "frontend", "milestone": "M3" },
+    { "id": "V-013", "title": "Hire Flow — Interview", "status": "done", "type": "frontend", "milestone": "M3" },
+    { "id": "V-014", "title": "Hire Flow — Payment", "status": "done", "type": "frontend", "milestone": "M3" },
+    { "id": "V-015", "title": "Live Job Dashboard", "status": "done", "type": "frontend", "milestone": "M3" },
+    { "id": "V-016", "title": "Agent Dashboard", "status": "done", "type": "frontend", "milestone": "M3" },
+    { "id": "V-017", "title": "LLM-Powered Interview Backend", "status": "done", "type": "code", "milestone": "M4" },
+    { "id": "V-018", "title": "Interview Frontend Polish", "status": "done", "type": "frontend", "milestone": "M4" },
+    { "id": "V-019", "title": "Agent Persona in Interview", "status": "todo", "type": "frontend", "milestone": "M4" },
+    { "id": "V-020", "title": "Sign In Page", "status": "done", "type": "frontend", "milestone": "M4" },
+    { "id": "V-021", "title": "How It Works Page", "status": "done", "type": "frontend", "milestone": "M4" },
+    { "id": "V-022", "title": "Pricing Page", "status": "done", "type": "frontend", "milestone": "M4" },
+    { "id": "V-023", "title": "Fix Navigation Links", "status": "done", "type": "frontend", "milestone": "M4" },
+    { "id": "V-024", "title": "Deferred Wallet Flow", "status": "done", "type": "frontend", "milestone": "M4" },
+    { "id": "V-025", "title": "Loading & Error States", "status": "done", "type": "frontend", "milestone": "M4" },
+    { "id": "V-026", "title": "Mobile Polish", "status": "done", "type": "frontend", "milestone": "M4" },
+    { "id": "V-027", "title": "E2E Testing", "status": "done", "type": "test", "milestone": "M5" },
+    { "id": "V-028", "title": "Bug Fixes", "status": "done", "type": "code", "milestone": "M5" },
+    { "id": "V-029", "title": "UI Polish", "status": "done", "type": "frontend", "milestone": "M5" },
+    { "id": "V-030", "title": "Light Contract Audit", "status": "done", "type": "security", "milestone": "M5" },
+    { "id": "V-031", "title": "Login Page Fix", "status": "done", "type": "frontend", "milestone": "M6" },
+    { "id": "V-032", "title": "Register Page Simplify", "status": "done", "type": "frontend", "milestone": "M6" },
+    { "id": "V-033", "title": "Hackathon Popup", "status": "done", "type": "frontend", "milestone": "M6" },
+    { "id": "V-034", "title": "Mock Agents Seed", "status": "done", "type": "backend", "milestone": "M6" },
+    { "id": "V-035", "title": "Demo Job Flow", "status": "done", "type": "fullstack", "milestone": "M6" },
+    { "id": "V-036", "title": "Demo Dashboard", "status": "done", "type": "frontend", "milestone": "M6" },
+    { "id": "V-037", "title": "Gallery with Demo Sites", "status": "done", "type": "frontend", "milestone": "M6" },
+    { "id": "V-038", "title": "ERC-8004 + Twitter Badges", "status": "todo", "type": "frontend", "milestone": "M6" },
+    { "id": "V-039", "title": "Production Deploy & Submit", "status": "done", "type": "devops", "milestone": "M7" }
   ],
   "workers": [],
   "activity": [
+    { "time": "2026-02-09T10:30:00-08:00", "type": "migration", "message": "Migrated to orchestrator format (B-001)" },
     { "time": "2026-02-06T15:40:00", "type": "complete", "message": "H-006 Demo hire page with GPT-4o interview" },
-    { "time": "2026-02-06T15:35:00", "type": "complete", "message": "Hackathon Gallery link added to header nav" },
     { "time": "2026-02-06T15:30:00", "type": "complete", "message": "Gallery demo sites deployed (3 live sites)" },
     { "time": "2026-02-06T15:20:00", "type": "complete", "message": "Railway backend deployed + seeded 7 agents" },
-    { "time": "2026-02-06T15:18:00", "type": "complete", "message": "Frontend deployed to viberr.fun" },
-    { "time": "2026-02-06T15:10:00", "type": "complete", "message": "H-007 Demo dashboard created" },
-    { "time": "2026-02-06T15:05:00", "type": "complete", "message": "H-008 Gallery detail pages created" },
-    { "time": "2026-02-06T14:50:00", "type": "start", "message": "Sprint resumed - Railway deploy needed" }
-  ],
-  "demoSites": {
-    "dogwalking": "https://test.viberr.fun",
-    "portfolio": "https://viberr-portfolio-demo.vercel.app",
-    "api-dashboard": "https://viberr-api-demo.vercel.app"
-  }
+    { "time": "2026-02-06T15:18:00", "type": "complete", "message": "Frontend deployed to viberr.fun" }
+  ]
 }

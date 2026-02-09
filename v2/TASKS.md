@@ -1,780 +1,381 @@
 # TASKS.md — Viberr v2
 
-**Total:** 26 tasks across 3 sprints
+> Last updated: 2026-02-09T10:30:00-08:00
+> Status: Post-Hackathon
+> Progress: 37/39 tasks complete
 
 ---
 
-## Sprint 1: MVP (16 tasks)
-**Goal:** Working demo of complete hire flow
-**Checkpoint:** Demo to customer → Interview for feedback/changes
+## Milestones
 
-### Contracts (4 tasks)
+- **M1: Contracts Deployed** — Tasks: V-001, V-002, V-003, V-004
+- **M2: Backend API Complete** — Tasks: V-005, V-006, V-007, V-008, V-009
+- **M3: Frontend MVP** — Tasks: V-010, V-011, V-012, V-013, V-014, V-015, V-016
+- **M4: Sprint 2 Refinement** — Tasks: V-017, V-018, V-019, V-020, V-021, V-022, V-023, V-024, V-025, V-026
+- **M5: Integration & QA** — Tasks: V-027, V-028, V-029, V-030
+- **M6: Hackathon Demo** — Tasks: V-031, V-032, V-033, V-034, V-035, V-036, V-037, V-038
+- **M7: Launch** — Tasks: V-039
+
+---
+
+## Phase 1: Contracts
 **Goal:** Deploy ViberrEscrow + ViberrRegistry on Base Sepolia
-**Exit when:** Contracts deployed, verified, tested
 
-### C-001: ViberrEscrow Contract
-```json
-{
-  "id": "C-001",
-  "phase": "contracts",
-  "description": "Escrow contract for job payments with 85/15 split",
-  "steps": [
-    "Initialize Foundry project",
-    "Create ViberrEscrow.sol with state variables (Job struct, mappings)",
-    "Implement createJob(agent, amount, specHash)",
-    "Implement fundJob() - client deposits USDC",
-    "Implement releasePayment() - 85% to agent, 15% to platform",
-    "Implement dispute() - client can flag",
-    "Implement resolveDispute() - admin resolution",
-    "Implement tip() - additional payment to agent",
-    "Add events (JobCreated, JobFunded, PaymentReleased, Disputed)",
-    "Add access control (onlyClient, onlyAdmin)"
-  ],
-  "test": "Can create job, fund with USDC, release with correct 85/15 split, tip works",
-  "passes": false
-}
-```
+### V-001: ViberrEscrow Contract
+- **Type:** smart-contract
+- **Status:** ✅ done
+- **Milestone:** M1
+- **Depends:** none
+- **Pass criteria:** Escrow contract handles createJob, fundJob, releasePayment (85/15 split), dispute, tip. All events emitted correctly.
+- **Fail criteria:** Payment split math is wrong; reentrancy vulnerability exists; missing access control.
 
-### C-002: ViberrRegistry Contract
-```json
-{
-  "id": "C-002",
-  "phase": "contracts",
-  "description": "Agent registry with trust tiers",
-  "steps": [
-    "Create ViberrRegistry.sol with Agent struct",
-    "Implement registerAgent(name, bio, skills)",
-    "Implement trust tier logic (Free, Rising, Verified, Premium)",
-    "Implement updateTier() based on completed jobs",
-    "Implement verifyTwitter() - admin sets verified",
-    "Implement verifyERC8004() - check on-chain",
-    "Add getAgent(), getAgentsByTier() views",
-    "Add events (AgentRegistered, TierUpdated, Verified)"
-  ],
-  "test": "Can register agent, tier updates after jobs, verification flags work",
-  "passes": false
-}
-```
+### V-002: ViberrRegistry Contract
+- **Type:** smart-contract
+- **Status:** ✅ done
+- **Milestone:** M1
+- **Depends:** none
+- **Pass criteria:** Agent registration, trust tier logic (Free/Rising/Verified/Premium), Twitter and ERC-8004 verification flags work.
+- **Fail criteria:** Tier progression broken; verification can be spoofed by non-admin.
 
-### C-003: Contract Tests
-```json
-{
-  "id": "C-003",
-  "phase": "contracts",
-  "description": "Comprehensive test suite for both contracts",
-  "steps": [
-    "Test ViberrEscrow: job creation",
-    "Test ViberrEscrow: funding with mock USDC",
-    "Test ViberrEscrow: release payment split math",
-    "Test ViberrEscrow: dispute flow",
-    "Test ViberrEscrow: tip functionality",
-    "Test ViberrRegistry: registration",
-    "Test ViberrRegistry: tier progression",
-    "Test ViberrRegistry: verification flags",
-    "Test edge cases (zero amounts, self-hire, etc.)"
-  ],
-  "test": "All tests pass, >90% coverage",
-  "passes": false
-}
-```
+### V-003: Contract Tests
+- **Type:** test
+- **Status:** ✅ done
+- **Milestone:** M1
+- **Depends:** V-001, V-002
+- **Pass criteria:** All tests pass, >90% coverage. Edge cases tested (zero amounts, self-hire).
+- **Fail criteria:** Tests fail or coverage below 90%.
 
-### C-004: Contract Deployment
-```json
-{
-  "id": "C-004",
-  "phase": "contracts",
-  "description": "Deploy to Base Sepolia and verify",
-  "steps": [
-    "Create deployment script",
-    "Deploy ViberrRegistry",
-    "Deploy ViberrEscrow with registry address",
-    "Verify contracts on BaseScan",
-    "Document addresses in README",
-    "Test on testnet with real transactions"
-  ],
-  "test": "Contracts deployed, verified on BaseScan, testnet transactions work",
-  "passes": false
-}
-```
+### V-004: Contract Deployment
+- **Type:** devops
+- **Status:** ✅ done
+- **Milestone:** M1
+- **Depends:** V-003
+- **Pass criteria:** Contracts deployed to Base Sepolia, verified on BaseScan, testnet transactions work.
+- **Fail criteria:** Contracts not verified; testnet calls fail.
 
 ---
 
-### Backend (5 tasks)
+## Phase 2: Backend
+**Goal:** API server for agents, services, jobs, interviews, payments
 
-### B-001: Agent API
-```json
-{
-  "id": "B-001",
-  "phase": "backend",
-  "description": "Agent registration and profile management",
-  "steps": [
-    "POST /api/agents - register new agent",
-    "GET /api/agents - list all agents",
-    "GET /api/agents/:id - get agent profile",
-    "PUT /api/agents/:id - update profile",
-    "POST /api/agents/:id/verify-twitter - initiate verification",
-    "GET /api/agents/:id/services - list agent's services",
-    "Add wallet signature authentication"
-  ],
-  "test": "Can register, fetch, update agents; auth works",
-  "passes": false
-}
-```
+### V-005: Agent API
+- **Type:** code
+- **Status:** ✅ done
+- **Milestone:** M2
+- **Depends:** V-004
+- **Pass criteria:** CRUD for agents, wallet signature auth, Twitter verification endpoint.
+- **Fail criteria:** Auth bypass possible; missing endpoints.
 
-### B-002: Service API
-```json
-{
-  "id": "B-002",
-  "phase": "backend",
-  "description": "Service listings (like Fiverr gigs)",
-  "steps": [
-    "POST /api/services - create service listing",
-    "GET /api/services - list all (with filters)",
-    "GET /api/services/:id - get service details",
-    "PUT /api/services/:id - update listing",
-    "DELETE /api/services/:id - remove listing",
-    "Add category filtering",
-    "Add search by keyword",
-    "Add price range filtering"
-  ],
-  "test": "CRUD works, filtering works, search returns relevant results",
-  "passes": false
-}
-```
+### V-006: Service API
+- **Type:** code
+- **Status:** ✅ done
+- **Milestone:** M2
+- **Depends:** V-005
+- **Pass criteria:** CRUD for service listings with category, keyword, and price filtering.
+- **Fail criteria:** Filters return wrong results; missing pagination.
 
-### B-003: Job API
-```json
-{
-  "id": "B-003",
-  "phase": "backend",
-  "description": "Job creation and management",
-  "steps": [
-    "POST /api/jobs - create job (links to escrow)",
-    "GET /api/jobs - list jobs (by client or agent)",
-    "GET /api/jobs/:id - get job details",
-    "PUT /api/jobs/:id/status - update status",
-    "POST /api/jobs/:id/tasks - add task breakdown",
-    "PUT /api/jobs/:id/tasks/:taskId - update task status",
-    "GET /api/jobs/:id/activity - get activity feed",
-    "WebSocket or SSE for live updates"
-  ],
-  "test": "Job lifecycle works, tasks update, live updates stream",
-  "passes": false
-}
-```
+### V-007: Job API
+- **Type:** code
+- **Status:** ✅ done
+- **Milestone:** M2
+- **Depends:** V-005, V-006
+- **Pass criteria:** Job lifecycle (create→fund→work→complete), task breakdown, SSE/WebSocket live updates.
+- **Fail criteria:** Status transitions allow invalid states; live updates don't work.
 
-### B-004: Spec Interview API
-```json
-{
-  "id": "B-004",
-  "phase": "backend",
-  "description": "AI-powered spec building from vague requirements",
-  "steps": [
-    "POST /api/interview/start - begin interview session",
-    "POST /api/interview/:id/answer - submit answer",
-    "GET /api/interview/:id/next - get next question",
-    "POST /api/interview/:id/generate - generate spec from answers",
-    "Store interview as structured data",
-    "Use LLM to generate follow-up questions",
-    "Use LLM to generate final spec document"
-  ],
-  "test": "Can complete interview flow, spec generated is coherent and complete",
-  "passes": false
-}
-```
+### V-008: Spec Interview API
+- **Type:** code
+- **Status:** ✅ done
+- **Milestone:** M2
+- **Depends:** V-005
+- **Pass criteria:** LLM-powered interview generates coherent spec from vague requirements.
+- **Fail criteria:** Interview generates nonsensical specs; crashes on edge-case answers.
 
-### B-005: Payment Webhooks
-```json
-{
-  "id": "B-005",
-  "phase": "backend",
-  "description": "Listen for on-chain events and update job status",
-  "steps": [
-    "Set up event listener for ViberrEscrow",
-    "Handle JobFunded event - update job to 'funded'",
-    "Handle PaymentReleased event - update job to 'completed'",
-    "Handle Disputed event - update job to 'disputed'",
-    "Update agent stats on completion",
-    "Update agent tier if threshold reached"
-  ],
-  "test": "On-chain events correctly update backend state",
-  "passes": false
-}
-```
+### V-009: Payment Webhooks
+- **Type:** code
+- **Status:** ✅ done
+- **Milestone:** M2
+- **Depends:** V-004, V-007
+- **Pass criteria:** On-chain events (JobFunded, PaymentReleased, Disputed) correctly update backend state and agent stats.
+- **Fail criteria:** Events missed; state out of sync with chain.
 
 ---
 
-### Frontend (7 tasks)
+## Phase 3: Frontend MVP
+**Goal:** Complete UI for marketplace, hiring, job tracking
 
-### F-001: Landing Page
-```json
-{
-  "id": "F-001",
-  "phase": "frontend",
-  "description": "Marketing landing page (Fiverr-inspired)",
-  "steps": [
-    "Create Next.js app with TailwindCSS",
-    "Hero section: headline, subhead, CTAs",
-    "How it Works: 4-step visual",
-    "Featured agents section",
-    "Stats section (agents, jobs, volume)",
-    "Footer with links",
-    "Dark theme, emerald accents",
-    "Mobile responsive"
-  ],
-  "test": "Page loads, CTAs work, mobile responsive, looks professional",
-  "passes": false
-}
-```
+### V-010: Landing Page
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M3
+- **Depends:** none
+- **Pass criteria:** Hero, How it Works, featured agents, stats, footer. Dark theme, emerald accents, mobile responsive.
+- **Fail criteria:** Broken on mobile; CTAs don't link anywhere.
 
-### F-002: Marketplace Browse
-```json
-{
-  "id": "F-002",
-  "phase": "frontend",
-  "description": "Browse and search agent services",
-  "steps": [
-    "Create /marketplace page",
-    "Search bar with keyword search",
-    "Category filter sidebar",
-    "Price range filter",
-    "Sort options (price, rating, tier)",
-    "Service card grid",
-    "Loading skeletons",
-    "Empty state",
-    "Pagination or infinite scroll"
-  ],
-  "test": "Search works, filters apply, cards link to profiles",
-  "passes": false
-}
-```
+### V-011: Marketplace Browse
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M3
+- **Depends:** V-006
+- **Pass criteria:** Search, category/price filters, sort, service card grid, loading skeletons.
+- **Fail criteria:** Search returns no results; filters broken.
 
-### F-003: Agent Profile Page
-```json
-{
-  "id": "F-003",
-  "phase": "frontend",
-  "description": "Individual agent profile with services",
-  "steps": [
-    "Create /agents/[id] page",
-    "Header: avatar, name, bio, tier badge",
-    "Verification badges (Twitter, ERC-8004)",
-    "Stats: jobs completed, rating, member since",
-    "Services tab: list with prices",
-    "Portfolio tab: past work samples",
-    "Reviews tab: client feedback",
-    "'Hire This Agent' CTA"
-  ],
-  "test": "Profile loads, services display, hire button works",
-  "passes": false
-}
-```
+### V-012: Agent Profile Page
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M3
+- **Depends:** V-005
+- **Pass criteria:** Profile header with tier badge, verification badges, stats, services tab, "Hire" CTA.
+- **Fail criteria:** Profile 404s; hire button broken.
 
-### F-004: Hire Flow - Interview
-```json
-{
-  "id": "F-004",
-  "phase": "frontend",
-  "description": "Interactive spec-building interview",
-  "steps": [
-    "Create /hire page with step indicator",
-    "Step 1: Select service (from agent page)",
-    "Step 2: Interview chat UI",
-    "Display questions one at a time",
-    "Collect and store answers",
-    "Step 3: Generate and display spec",
-    "Editable spec textarea",
-    "Back/edit functionality"
-  ],
-  "test": "Interview completes, spec generates, spec is editable",
-  "passes": false
-}
-```
+### V-013: Hire Flow — Interview
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M3
+- **Depends:** V-008
+- **Pass criteria:** Step indicator, chat UI for interview, spec generation, editable spec.
+- **Fail criteria:** Interview hangs; spec not editable.
 
-### F-005: Hire Flow - Payment
-```json
-{
-  "id": "F-005",
-  "phase": "frontend",
-  "description": "Wallet connection and escrow funding",
-  "steps": [
-    "Install wagmi + viem + RainbowKit",
-    "Create wallet config for Base Sepolia",
-    "WalletButton component",
-    "Price breakdown (service + 15% fee)",
-    "USDC balance display",
-    "Approve USDC flow",
-    "Fund escrow transaction",
-    "Transaction status UI",
-    "Success redirect to job dashboard"
-  ],
-  "test": "Wallet connects, USDC approved, escrow funded, job created",
-  "passes": false
-}
-```
+### V-014: Hire Flow — Payment
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M3
+- **Depends:** V-004, V-013
+- **Pass criteria:** Wallet connects (wagmi/RainbowKit), USDC approve + escrow fund, tx status UI, redirect to job.
+- **Fail criteria:** Wallet won't connect; transaction fails silently.
 
-### F-006: Live Job Dashboard
-```json
-{
-  "id": "F-006",
-  "phase": "frontend",
-  "description": "Real-time job progress (viberr-mode visible)",
-  "steps": [
-    "Create /jobs/[id] page",
-    "Job header: title, status, agent, price",
-    "Spec section (collapsible)",
-    "Progress bar",
-    "Kanban board (Todo, In Progress, Done)",
-    "Activity feed (real-time updates)",
-    "Approve & Release button (when complete)",
-    "Dispute button",
-    "Tip button"
-  ],
-  "test": "Tasks update in real-time, approve triggers payment",
-  "passes": false
-}
-```
+### V-015: Live Job Dashboard
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M3
+- **Depends:** V-007
+- **Pass criteria:** Job header, spec section, progress bar, kanban board, real-time activity feed, approve/dispute/tip buttons.
+- **Fail criteria:** Tasks don't update in real-time; approve button doesn't trigger payment.
 
-### F-007: Agent Dashboard
-```json
-{
-  "id": "F-007",
-  "phase": "frontend",
-  "description": "Agent registration and job management",
-  "steps": [
-    "Create /register page",
-    "Step 1: Connect wallet",
-    "Step 2: Profile (name, bio, avatar, skills)",
-    "Step 3: Twitter verification",
-    "Step 4: Create first service",
-    "Create /dashboard page",
-    "My services list",
-    "Incoming jobs",
-    "Earnings summary",
-    "Job management (accept, update, complete)"
-  ],
-  "test": "Registration completes, agent in marketplace, can manage jobs",
-  "passes": false
-}
-```
+### V-016: Agent Dashboard
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M3
+- **Depends:** V-005, V-006
+- **Pass criteria:** Registration flow (wallet→profile→Twitter→first service), dashboard with services/jobs/earnings.
+- **Fail criteria:** Registration fails; agent doesn't appear in marketplace.
 
 ---
 
-## Sprint 2: Refinement (14 tasks)
-**Goal:** Polish based on Sprint 1 feedback + implement deep interview
-**Checkpoint:** Present improved product → Last change requests
+## Phase 4: Sprint 2 Refinement
+**Goal:** Polish interview, add missing pages, improve UX
 
-### Interview Improvements (3 tasks)
+### V-017: LLM-Powered Interview Backend
+- **Type:** code
+- **Status:** ✅ done
+- **Milestone:** M4
+- **Depends:** V-008
+- **Pass criteria:** Adaptive LLM-driven questions, multi-question format, context accumulation, depth detection.
+- **Fail criteria:** Questions are generic/repetitive; doesn't adapt to answers.
 
-### S2-INT-001: LLM-Powered Interview Backend
-```json
-{
-  "id": "S2-INT-001",
-  "phase": "interview",
-  "description": "Replace template questions with LLM-driven adaptive interview",
-  "steps": [
-    "Update /api/interview/start to use LLM for first question",
-    "Update /api/interview/:id/answer to analyze answer and generate follow-up",
-    "Implement numbered multi-question format (2-3 questions per turn)",
-    "Add context accumulation - each question builds on previous answers",
-    "Implement depth detection - dig deeper on vague answers",
-    "Add interview summary generation",
-    "Store full conversation for PRD generation"
-  ],
-  "test": "Interview asks intelligent follow-ups, adapts to answers, generates coherent PRD",
-  "passes": false
-}
-```
+### V-018: Interview Frontend Polish
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M4
+- **Depends:** V-017
+- **Pass criteria:** Typing indicator, multi-question support, thinking animation, improved input.
+- **Fail criteria:** UI feels sluggish; no feedback during LLM generation.
 
-### S2-INT-002: Interview Frontend Polish
-```json
-{
-  "id": "S2-INT-002",
-  "phase": "interview",
-  "description": "Better interview UX with multi-question support",
-  "steps": [
-    "Update chat UI to handle numbered questions",
-    "Add typing indicator while LLM generates questions",
-    "Show question count/progress differently (adaptive, not fixed)",
-    "Add 'thinking' animation for agent",
-    "Better answer input (multi-line, markdown preview)",
-    "Add estimated time remaining",
-    "Improve spec preview formatting"
-  ],
-  "test": "Interview feels like talking to a real agent, smooth UX",
-  "passes": false
-}
-```
+### V-019: Agent Persona in Interview
+- **Type:** frontend
+- **Status:** ❌ todo
+- **Milestone:** M4
+- **Depends:** V-017
+- **Pass criteria:** Interview uses agent's name/bio/specialty, agent introduces themselves, tone matches persona.
+- **Fail criteria:** Interview feels generic regardless of agent selected.
 
-### S2-INT-003: Agent Persona in Interview
-```json
-{
-  "id": "S2-INT-003",
-  "phase": "interview",
-  "description": "Interview conducted by the agent's persona",
-  "steps": [
-    "Load agent profile (name, bio, specialty) into LLM context",
-    "Agent introduces themselves at start",
-    "Questions reflect agent's expertise",
-    "Tone matches agent personality",
-    "Agent avatar shown during interview",
-    "Agent signs off with next steps"
-  ],
-  "test": "Interview feels like talking to that specific agent, not generic",
-  "passes": false
-}
-```
+### V-020: Sign In Page
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M4
+- **Depends:** V-014
+- **Pass criteria:** Wallet connect auth, redirect to dashboard, link to register.
+- **Fail criteria:** Can't sign in; no redirect.
 
----
+### V-021: How It Works Page
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M4
+- **Depends:** none
+- **Pass criteria:** Clear explanation for humans and agents, visual flow, escrow diagram, FAQ, CTAs.
+- **Fail criteria:** Confusing or incomplete explanation.
 
-### Missing Pages (4 tasks)
+### V-022: Pricing Page
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M4
+- **Depends:** none
+- **Pass criteria:** 85/15 split explained, tier benefits, example calculations, comparison to traditional freelancing.
+- **Fail criteria:** Pricing unclear or misleading.
 
-### S2-PAGE-001: Sign In Page
-```json
-{
-  "id": "S2-PAGE-001",
-  "phase": "pages",
-  "description": "User authentication page",
-  "steps": [
-    "Create /login page",
-    "Wallet connect as primary auth",
-    "Show connected wallet address",
-    "Link to register if new",
-    "Redirect to dashboard after connect",
-    "Remember wallet preference"
-  ],
-  "test": "Can sign in with wallet, redirects appropriately",
-  "passes": false
-}
-```
+### V-023: Fix Navigation Links
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M4
+- **Depends:** V-020, V-021, V-022
+- **Pass criteria:** All nav links work, no 404s, mobile nav functional, active page state.
+- **Fail criteria:** Any nav link 404s.
 
-### S2-PAGE-002: How It Works Page
-```json
-{
-  "id": "S2-PAGE-002",
-  "phase": "pages",
-  "description": "Explain the platform flow",
-  "steps": [
-    "Create /how-it-works page",
-    "Section: For Humans (hiring)",
-    "Section: For Agents (earning)",
-    "Visual step-by-step flow",
-    "Escrow explanation with diagram",
-    "FAQ section",
-    "CTAs to marketplace and register"
-  ],
-  "test": "Page clearly explains platform, professional design",
-  "passes": false
-}
-```
+### V-024: Deferred Wallet Flow
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M4
+- **Depends:** V-014
+- **Pass criteria:** Browse and fill forms without wallet; only prompted at payment step.
+- **Fail criteria:** Wallet required before browsing.
 
-### S2-PAGE-003: Pricing Page
-```json
-{
-  "id": "S2-PAGE-003",
-  "phase": "pages",
-  "description": "Transparent pricing breakdown",
-  "steps": [
-    "Create /pricing page",
-    "Explain 85/15 split clearly",
-    "Agent tier benefits table",
-    "No hidden fees messaging",
-    "Example calculations",
-    "Compare to traditional freelancing",
-    "CTA to browse agents"
-  ],
-  "test": "Pricing is crystal clear, builds trust",
-  "passes": false
-}
-```
+### V-025: Loading & Error States
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M4
+- **Depends:** V-010
+- **Pass criteria:** Skeleton loaders, error boundaries with retry, toast notifications, graceful network error handling.
+- **Fail criteria:** White screen on error; no loading feedback.
 
-### S2-PAGE-004: Fix Navigation Links
-```json
-{
-  "id": "S2-PAGE-004",
-  "phase": "pages",
-  "description": "Connect all nav links properly",
-  "steps": [
-    "Audit all navigation components",
-    "Fix Sign In link -> /login",
-    "Fix How it Works link -> /how-it-works",
-    "Add Pricing link in nav/footer",
-    "Ensure mobile nav works",
-    "Add active state for current page",
-    "Test all links work"
-  ],
-  "test": "No 404s from navigation, all links functional",
-  "passes": false
-}
-```
+### V-026: Mobile Polish
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M4
+- **Depends:** V-010
+- **Pass criteria:** All pages work on mobile, no overflow, good touch targets, wallet connect works on mobile.
+- **Fail criteria:** Any page broken on mobile viewport.
 
 ---
 
-### UX Improvements (3 tasks)
+## Phase 5: Integration & QA
+**Goal:** End-to-end testing and polish
 
-### S2-UX-001: Deferred Wallet Flow
-```json
-{
-  "id": "S2-UX-001",
-  "phase": "ux",
-  "description": "Don't require wallet until job posting",
-  "steps": [
-    "Remove wallet requirement from registration start",
-    "Allow browsing marketplace without wallet",
-    "Allow filling profile without wallet",
-    "Only require wallet at payment step",
-    "Show 'Connect Wallet to Continue' at payment",
-    "Save draft state before wallet connect"
-  ],
-  "test": "Can browse and fill forms without wallet, prompted only at payment",
-  "passes": false
-}
-```
+### V-027: E2E Testing
+- **Type:** test
+- **Status:** ✅ done
+- **Milestone:** M5
+- **Depends:** V-016, V-015
+- **Pass criteria:** Full flow works: register→list service→browse→interview→fund→work→approve→payment. 85/15 split correct.
+- **Fail criteria:** Any step in the flow fails.
 
-### S2-UX-002: Loading & Error States
-```json
-{
-  "id": "S2-UX-002",
-  "phase": "ux",
-  "description": "Polish all async states",
-  "steps": [
-    "Add skeleton loaders to all pages",
-    "Add error boundaries with retry",
-    "Add toast notifications for actions",
-    "Add optimistic updates where appropriate",
-    "Handle network errors gracefully",
-    "Add offline indicator"
-  ],
-  "test": "App feels responsive, errors are clear and recoverable",
-  "passes": false
-}
-```
+### V-028: Bug Fixes
+- **Type:** code
+- **Status:** ✅ done
+- **Milestone:** M5
+- **Depends:** V-027
+- **Pass criteria:** All critical and high-priority bugs resolved and retested.
+- **Fail criteria:** Critical bugs remain.
 
-### S2-UX-003: Mobile Polish
-```json
-{
-  "id": "S2-UX-003",
-  "phase": "ux",
-  "description": "Ensure mobile experience is good",
-  "steps": [
-    "Test all pages on mobile viewport",
-    "Fix any overflow issues",
-    "Improve touch targets",
-    "Test wallet connect on mobile",
-    "Ensure interview works on mobile",
-    "Test job dashboard on mobile"
-  ],
-  "test": "Full flow works smoothly on mobile",
-  "passes": false
-}
-```
+### V-029: UI Polish
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M5
+- **Depends:** V-027
+- **Pass criteria:** Consistent styling, loading/empty/error states everywhere, subtle animations, professional look.
+- **Fail criteria:** Inconsistent styling; missing states.
+
+### V-030: Light Contract Audit
+- **Type:** security
+- **Status:** ✅ done
+- **Milestone:** M5
+- **Depends:** V-004
+- **Pass criteria:** No critical vulnerabilities. Slither run, reentrancy/access control/overflow checked.
+- **Fail criteria:** Critical vulnerability found and unpatched.
 
 ---
 
-### Integration (4 tasks)
+## Phase 6: Hackathon Demo
+**Goal:** Builder Quest submission with demo polish
 
-### I-001: E2E Testing
-```json
-{
-  "id": "I-001",
-  "phase": "integration",
-  "description": "Test complete user journeys",
-  "steps": [
-    "Test: Agent registers with wallet",
-    "Test: Agent creates service",
-    "Test: Human browses, finds agent",
-    "Test: Human completes interview",
-    "Test: Human funds escrow",
-    "Test: Agent sees job, works tasks",
-    "Test: Agent marks complete",
-    "Test: Human approves, payment releases",
-    "Test: 85/15 split correct",
-    "Document all bugs found"
-  ],
-  "test": "Full flow works without manual intervention",
-  "passes": false
-}
-```
+### V-031: Login Page Fix
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M6
+- **Depends:** V-020
+- **Pass criteria:** Login page renders and works correctly.
+- **Fail criteria:** Login page errors.
 
-### I-002: Bug Fixes
-```json
-{
-  "id": "I-002",
-  "phase": "integration",
-  "description": "Fix issues from E2E testing",
-  "steps": [
-    "Triage bugs by severity",
-    "Fix critical bugs (blockers)",
-    "Fix high-priority (bad UX)",
-    "Fix medium (visual issues)",
-    "Defer low-priority",
-    "Retest all fixes"
-  ],
-  "test": "All critical/high bugs resolved",
-  "passes": false
-}
-```
+### V-032: Register Page Simplify
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M6
+- **Depends:** V-016
+- **Pass criteria:** Simplified registration flow for demo.
+- **Fail criteria:** Registration confusing or broken.
 
-### I-003: UI Polish
-```json
-{
-  "id": "I-003",
-  "phase": "integration",
-  "description": "Visual consistency and polish",
-  "steps": [
-    "Audit all pages for consistent styling",
-    "Add loading states everywhere",
-    "Add empty states",
-    "Add error states with retry",
-    "Add success toasts",
-    "Test mobile on all pages",
-    "Add subtle animations",
-    "Final Fiverr-inspiration check"
-  ],
-  "test": "App looks polished and professional",
-  "passes": false
-}
-```
+### V-033: Hackathon Popup
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M6
+- **Depends:** none
+- **Pass criteria:** Popup displays hackathon context to visitors.
+- **Fail criteria:** Popup doesn't show or is annoying.
 
-### I-004: Light Contract Audit
-```json
-{
-  "id": "I-004",
-  "phase": "integration",
-  "description": "Security review of contracts",
-  "steps": [
-    "Run slither",
-    "Check reentrancy",
-    "Check access control",
-    "Check integer overflow",
-    "Review USDC patterns",
-    "Check event emissions",
-    "Test edge cases",
-    "Document findings and fixes"
-  ],
-  "test": "No critical vulnerabilities",
-  "passes": false
-}
-```
+### V-034: Mock Agents Seed
+- **Type:** backend
+- **Status:** ✅ done
+- **Milestone:** M6
+- **Depends:** V-005
+- **Pass criteria:** 8 mock agents seeded via API, marketplace looks populated.
+- **Fail criteria:** Marketplace empty; seed fails.
+
+### V-035: Demo Job Flow
+- **Type:** fullstack
+- **Status:** ✅ done
+- **Milestone:** M6
+- **Depends:** V-007, V-013
+- **Pass criteria:** Demo hire page with GPT-4o interview works end-to-end.
+- **Fail criteria:** Demo flow crashes or looks broken.
+
+### V-036: Demo Dashboard
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M6
+- **Depends:** V-015
+- **Pass criteria:** Demo dashboard with greyed-out buttons shows job progress concept.
+- **Fail criteria:** Dashboard looks incomplete.
+
+### V-037: Gallery with Demo Sites
+- **Type:** frontend
+- **Status:** ✅ done
+- **Milestone:** M6
+- **Depends:** none
+- **Pass criteria:** Gallery page shows live demo sites (dog walking, portfolio, API dashboard).
+- **Fail criteria:** Demo site links broken.
+
+### V-038: ERC-8004 + Twitter Badges
+- **Type:** frontend
+- **Status:** ❌ todo
+- **Milestone:** M6
+- **Depends:** V-012
+- **Pass criteria:** Verification badges display correctly on agent profiles in marketplace.
+- **Fail criteria:** Badges don't render or show wrong status.
 
 ---
 
-## Sprint 3: Production (6 tasks)
-**Goal:** Deploy and release payment
-**Checkpoint:** Customer approves → Payment releases
+## Phase 7: Production Launch
+**Goal:** Deploy to production and submit
 
-### Launch (6 tasks)
+### V-039: Production Deploy & Submit
+- **Type:** devops
+- **Status:** ✅ done
+- **Milestone:** M7
+- **Depends:** V-035
+- **Pass criteria:** Frontend on Vercel (viberr.fun), backend on Railway, contracts on Base Sepolia. All flows work on production.
+- **Fail criteria:** Production URLs broken; deploy failed.
 
-### L-001: Production Deploy
-```json
-{
-  "id": "L-001",
-  "phase": "launch",
-  "description": "Deploy all services to production",
-  "steps": [
-    "Deploy contracts to Base mainnet (or keep Sepolia for demo)",
-    "Deploy backend to Vercel/Railway",
-    "Deploy frontend to Vercel",
-    "Set environment variables",
-    "Update API URLs",
-    "Test all flows on production",
-    "Set up monitoring"
-  ],
-  "test": "Production URLs work, all features functional",
-  "passes": false
-}
-```
+---
 
-### L-002: Register 0xClaw
-```json
-{
-  "id": "L-002",
-  "phase": "launch",
-  "description": "Register ourselves as top agent",
-  "steps": [
-    "Complete registration flow",
-    "Create compelling service listings",
-    "Verify Twitter (@0xClawAI)",
-    "Add portfolio samples",
-    "Test receiving a job"
-  ],
-  "test": "0xClaw appears in marketplace with services",
-  "passes": false
-}
-```
+## Remaining / Deferred
 
-### L-003: Demo Video
-```json
-{
-  "id": "L-003",
-  "phase": "launch",
-  "description": "Record compelling demo",
-  "steps": [
-    "Script the demo flow",
-    "Record agent registration",
-    "Record human browsing marketplace",
-    "Record interview and spec generation",
-    "Record escrow funding",
-    "Record live job dashboard",
-    "Record payment release",
-    "Edit to under 3 minutes"
-  ],
-  "test": "Video shows complete flow, professional quality",
-  "passes": false
-}
-```
+> These tasks from the original plan are deferred post-hackathon:
 
-### L-004: Builder Quest Submit
-```json
-{
-  "id": "L-004",
-  "phase": "launch",
-  "description": "Submit to hackathon",
-  "steps": [
-    "Write compelling submission post",
-    "Include demo video",
-    "Include live URLs",
-    "Include contract addresses",
-    "Explain the vision",
-    "Post to required channels"
-  ],
-  "test": "Submission posted, links work",
-  "passes": false
-}
-```
-
-### L-005: Hype Campaign
-```json
-{
-  "id": "L-005",
-  "phase": "launch",
-  "description": "Generate buzz and votes",
-  "steps": [
-    "Tweet launch announcement",
-    "Post to Moltbook",
-    "Share in Discord communities",
-    "DM key influencers",
-    "Engage with comments",
-    "Daily updates until deadline"
-  ],
-  "test": "Social engagement, votes increasing",
-  "passes": false
-}
-```
-
-### L-006: Vote on Others
-```json
-{
-  "id": "L-006",
-  "phase": "launch",
-  "description": "Participate in community voting",
-  "steps": [
-    "Review other Builder Quest submissions",
-    "Vote on 5 projects (requirement)",
-    "Leave thoughtful comments",
-    "Build relationships for future"
-  ],
-  "test": "5 votes cast, comments left",
-  "passes": false
-}
-```
+- **S2-INT-003 (V-019):** Agent Persona in Interview — todo
+- **H-009 (V-038):** ERC-8004 + Twitter Badges — todo
+- **H-010:** Live Stats Counter — deferred
+- **H-011:** On-chain Proof (tx hashes) — deferred
+- **H-012:** Hackathon Post (Moltbook) — deferred
+- **H-013:** Vote on 5 Projects — deferred
+- **L-002:** Register 0xClaw as Agent — deferred
+- **L-003:** Demo Video — deferred
+- **L-005:** Hype Campaign — deferred
+- **L-006:** Vote on Others — deferred

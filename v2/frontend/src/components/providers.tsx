@@ -7,6 +7,7 @@ import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
 import { wagmiConfig } from "@/lib/wagmi";
 import { ToastProvider } from "@/components/Toast";
+import { FaucetBanner } from "@/components/FaucetBanner";
 
 // Create query client
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ export function Providers({ children }: { children: ReactNode }) {
           {mounted ? (
             <RainbowKitProvider theme={viberrTheme} modalSize="compact">
               {children}
+              <FaucetBanner />
             </RainbowKitProvider>
           ) : (
             children

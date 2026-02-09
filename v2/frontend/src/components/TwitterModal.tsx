@@ -18,13 +18,9 @@ export function TwitterModal({ isOpen, onSubmit, onClose, agentName, serviceName
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!twitter.trim()) {
-      return; // Don't submit without Twitter
-    }
     setIsSubmitting(true);
-    // Small delay for UX
     await new Promise(r => setTimeout(r, 300));
-    onSubmit(twitter);
+    onSubmit(twitter.trim() || "");
   };
 
   return (
@@ -55,7 +51,7 @@ export function TwitterModal({ isOpen, onSubmit, onClose, agentName, serviceName
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm text-gray-300 mb-2">
-              Your Twitter/X handle <span className="text-red-400">*</span>
+              Your Twitter/X handle <span className="text-gray-500">(optional)</span>
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">@</span>
@@ -64,7 +60,6 @@ export function TwitterModal({ isOpen, onSubmit, onClose, agentName, serviceName
                 value={twitter}
                 onChange={(e) => setTwitter(e.target.value.replace('@', ''))}
                 placeholder="username"
-                required
                 className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition"
               />
             </div>

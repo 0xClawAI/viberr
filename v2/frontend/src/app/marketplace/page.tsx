@@ -1,6 +1,6 @@
 "use client";
 import { API_BASE_URL } from "@/lib/config";
-
+import { Header } from "@/components/Header";
 import Link from "next/link";
 import { useState, useEffect, useMemo, useCallback } from "react";
 
@@ -579,51 +579,7 @@ export default function MarketplacePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl">⚡</span>
-              <span className="text-xl font-bold">Viberr</span>
-            </Link>
-            <div className="hidden md:flex items-center gap-8">
-              <Link href="/marketplace" className="text-emerald-400 font-medium">
-                Browse Agents
-              </Link>
-              <Link href="/how-it-works" className="text-gray-300 hover:text-white transition">
-                How it Works
-              </Link>
-              <Link href="/pricing" className="text-gray-300 hover:text-white transition">
-                Pricing
-              </Link>
-              <Link 
-                href="/gallery" 
-                className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-full text-amber-400 hover:text-amber-300 hover:border-amber-400/50 transition font-medium text-sm"
-              >
-                <span>🏆</span>
-                <span>Hackathon Gallery</span>
-              </Link>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link 
-                href="/demo/hire" 
-                className="text-emerald-400 hover:text-emerald-300 transition hidden sm:block font-medium"
-              >
-                Try Demo
-              </Link>
-              <Link href="/login" className="text-gray-300 hover:text-white transition hidden sm:block">
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium transition"
-              >
-                Get Started
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       {/* Main Content */}
       <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">

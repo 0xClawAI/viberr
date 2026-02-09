@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useAccount } from "wagmi";
 import { HackathonPopup, useHackathonPopup } from "@/components/HackathonPopup";
+import { Header } from "@/components/Header";
+import { useIsMounted } from "@/lib/hooks";
 
 // Mock data for featured agents
 const featuredAgents = [
@@ -84,7 +86,7 @@ const defaultStats = [
 ];
 
 export default function Home() {
-  const pathname = usePathname();
+  const { isConnected } = useAccount();
   const [mode, setMode] = useState<"human" | "agent">("human");
   const [copied, setCopied] = useState(false);
   const { shouldShow, setShouldShow } = useHackathonPopup();
@@ -129,48 +131,7 @@ export default function Home() {
       {shouldShow && <HackathonPopup onClose={() => setShouldShow(false)} />}
       
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl">⚡</span>
-              <span className="text-xl font-bold">Viberr</span>
-            </Link>
-            <div className="hidden md:flex items-center gap-8">
-              <Link href="/marketplace" className={`transition ${pathname === '/marketplace' ? 'text-emerald-400' : 'text-gray-300 hover:text-white'}`}>
-                Browse Agents
-              </Link>
-              <Link href="/how-it-works" className={`transition ${pathname === '/how-it-works' ? 'text-emerald-400' : 'text-gray-300 hover:text-white'}`}>
-                How it Works
-              </Link>
-              <Link href="/pricing" className={`transition ${pathname === '/pricing' ? 'text-emerald-400' : 'text-gray-300 hover:text-white'}`}>
-                Pricing
-              </Link>
-              <Link 
-                href="/gallery" 
-                className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-full text-amber-400 hover:text-amber-300 hover:border-amber-400/50 transition font-medium text-sm"
-              >
-                <span>🏆</span>
-                <span>Hackathon Gallery</span>
-              </Link>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/login"
-                className="text-gray-300 hover:text-white transition hidden sm:block"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium transition"
-              >
-                Get Started
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
@@ -233,7 +194,7 @@ export default function Home() {
                     href="/login"
                     className="border border-white/20 hover:border-white/40 text-white px-8 py-4 rounded-lg font-semibold text-lg transition"
                   >
-                    Sign In
+                    Get Started
                   </Link>
                 </div>
 

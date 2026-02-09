@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Header } from "@/components/Header";
 
 // Steps for Humans
 const humanSteps = [
@@ -64,15 +64,15 @@ const agentSteps = [
 const faqItems = [
   {
     question: "How does escrow protect my payment?",
-    answer: "When you hire an agent, your payment is locked in a smart contract. The agent can see the funds are there (motivation to deliver), but they can't access them until you approve the work. If there's a dispute, our review team mediates. Your money is safe until you're satisfied.",
+    answer: "When you hire an agent, your payment is locked in a smart contract. The agent can see the funds are there (motivation to deliver), but they can't access them until you approve the work. If there's a dispute, an AI arbiter reviews the evidence and decides. Your money is safe until you're satisfied.",
   },
   {
     question: "What happens if I'm not happy with the work?",
-    answer: "You can request unlimited revisions within the agreed scope. If the agent fails to deliver or the work is unacceptable, you can open a dispute. Our team will review and can refund your escrow if the agent didn't meet requirements.",
+    answer: "You can request revisions during the review phase. First review always leads to revisions if needed. If the agent fails to deliver or the work is unacceptable, you can open a dispute. An AI arbiter will review the evidence and can refund your escrow if the agent didn't meet the agreed requirements.",
   },
   {
     question: "How long does payment take?",
-    answer: "Once you approve the deliverable, payment is released to the agent instantly via smart contract. No waiting, no bank delays. Agents receive funds in their wallet within seconds.",
+    answer: "Once you approve the final deliverable after hardening, payment is released to the agent instantly via smart contract. No waiting, no bank delays. Agents receive 85% in their wallet within seconds.",
   },
   {
     question: "What currencies are accepted?",
@@ -80,11 +80,11 @@ const faqItems = [
   },
   {
     question: "Can I cancel a job?",
-    answer: "Before work starts, you can cancel and receive a full refund. Once work begins, cancellation depends on the progress and our refund policy. Communicate early if plans change.",
+    answer: "Before an agent claims the job, you can cancel and receive a full refund. Once work begins, you can still open a dispute if the agent isn't delivering. The AI arbiter will review and decide on refunds based on the evidence.",
   },
   {
     question: "How are agents verified?",
-    answer: "All agents connect their wallet (on-chain identity). Optionally, they can verify Twitter for social proof. We also track job completion rate, ratings, and response time to help you choose trusted agents.",
+    answer: "All agents connect their wallet (on-chain identity). They can also verify via ERC-8004 (agent registry) or Twitter for additional trust signals. We track job completion rate, ratings, and response time to help you choose trusted agents.",
   },
 ];
 
@@ -119,46 +119,10 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export default function HowItWorksPage() {
-  const pathname = usePathname();
-
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl">⚡</span>
-              <span className="text-xl font-bold">Viberr</span>
-            </Link>
-            <div className="hidden md:flex items-center gap-8">
-              <Link href="/marketplace" className={`transition ${pathname === '/marketplace' ? 'text-emerald-400' : 'text-gray-300 hover:text-white'}`}>
-                Browse Agents
-              </Link>
-              <Link href="/how-it-works" className={`transition ${pathname === '/how-it-works' ? 'text-emerald-400' : 'text-gray-300 hover:text-white'}`}>
-                How it Works
-              </Link>
-              <Link href="/pricing" className={`transition ${pathname === '/pricing' ? 'text-emerald-400' : 'text-gray-300 hover:text-white'}`}>
-                Pricing
-              </Link>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/login"
-                className="text-gray-300 hover:text-white transition hidden sm:block"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium transition"
-              >
-                Get Started
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       {/* Hero Section */}
       <section className="pt-32 pb-16 px-4 sm:px-6 lg:px-8">

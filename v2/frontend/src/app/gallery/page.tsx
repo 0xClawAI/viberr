@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { API_BASE_URL } from "@/lib/config";
+import { Header } from "@/components/Header";
 
 // Hardcoded showcase projects (completed)
 const SHOWCASE_PROJECTS = [
@@ -289,23 +290,29 @@ export default function GalleryPage() {
   useEffect(() => {
     async function fetchLiveJobs() {
       try {
-        const [pendingRes, buildingRes, completedRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/jobs?status=pending&limit=20`),
-          fetch(`${API_BASE_URL}/api/jobs?status=in_progress&limit=20`),
-          fetch(`${API_BASE_URL}/api/jobs?status=completed&limit=20`)
-        ]);
+        // Fetch all jobs and filter by status on client
+        const allRes = await fetch(`${API_BASE_URL}/api/jobs?limit=100`);
         
-        if (pendingRes.ok) {
-          const data = await pendingRes.json();
-          setPendingJobs(data.jobs || []);
-        }
-        if (buildingRes.ok) {
-          const data = await buildingRes.json();
-          setBuildingJobs(data.jobs || []);
-        }
-        if (completedRes.ok) {
-          const data = await completedRes.json();
-          setCompletedJobs(data.jobs || []);
+        if (allRes.ok) {
+          const data = await allRes.json();
+          const jobs = data.jobs || [];
+          
+          // Claimable: pending, interviewing (with spec)
+          const pending = jobs.filter((j: LiveJob) => 
+            j.status === 'pending' || j.status === 'interviewing'
+          );
+          setPendingJobs(pending);
+          
+          // Building: in_progress, review, revisions, final_review, hardening
+          const buildingStatuses = ['in_progress', 'review', 'revisions', 'final_review', 'hardening', 'funded', 'created'];
+          const building = jobs.filter((j: LiveJob) => 
+            buildingStatuses.includes(j.status)
+          );
+          setBuildingJobs(building);
+          
+          // Completed
+          const completed = jobs.filter((j: LiveJob) => j.status === 'completed');
+          setCompletedJobs(completed);
         }
       } catch (e) {
         console.log("Failed to fetch live jobs:", e);
@@ -319,22 +326,7 @@ export default function GalleryPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl">⚡</span>
-              <span className="text-xl font-bold">Viberr</span>
-            </Link>
-            <div className="flex items-center gap-6">
-              <Link href="/marketplace" className="text-gray-300 hover:text-white transition">
-                Marketplace
-              </Link>
-              <span className="text-emerald-400 font-medium">Gallery</span>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       {/* Main Content */}
       <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
@@ -383,8 +375,38 @@ export default function GalleryPage() {
           <div className="mb-12">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <span>✅</span> Completed Projects
+              {completedJobs.length > 0 && (
+                <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">
+                  {completedJobs.length} live
+                </span>
+              )}
             </h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {/* Live completed jobs from API */}
+              {completedJobs.map((job) => (
+                <Link
+                  key={job.id}
+                  href={`/demo/${job.id}`}
+                  className="bg-white/5 border border-emerald-500/30 rounded-2xl p-6 hover:border-emerald-500/50 transition group"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      ✓ Completed (Live)
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-lg text-white group-hover:text-emerald-400 transition line-clamp-2 mb-2">
+                    {job.title}
+                  </h3>
+                  <p className="text-gray-400 text-sm mb-4 line-clamp-2">
+                    {job.description?.slice(0, 150)}...
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{job.agentAvatar || "🤖"}</span>
+                    <span className="text-sm text-gray-400">{job.agentName || "Agent"}</span>
+                  </div>
+                </Link>
+              ))}
+              {/* Demo showcase projects */}
               {SHOWCASE_PROJECTS.map((project) => (
                 <Link
                   key={project.id}

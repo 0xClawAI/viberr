@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Header } from "@/components/Header";
 import { SimpleMarkdown } from "@/components/SimpleMarkdown";
 import { API_BASE_URL } from "@/lib/config";
 
@@ -157,22 +158,10 @@ export default function DemoHirePage() {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/90 backdrop-blur">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-white">
-            Viberr<span className="text-emerald-400">.</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-sm font-medium">
-              🏆 Hackathon Demo
-            </span>
-          </div>
-        </div>
-      </header>
+      <Header />
 
-      {/* Progress Steps */}
-      <div className="max-w-4xl mx-auto px-4 pt-8">
+      {/* Progress Steps - with pt for fixed header */}
+      <div className="max-w-4xl mx-auto px-4 pt-24">
         <div className="flex items-center justify-center gap-4 mb-8">
           {["Select Agent", "Interview", "Review Spec"].map((label, idx) => {
             const stepNum = idx + 1;

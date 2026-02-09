@@ -1,6 +1,11 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
+const Anthropic = require('@anthropic-ai/sdk');
+
+const anthropic = new Anthropic.default({
+  apiKey: process.env.ANTHROPIC_API_KEY
+});
 const db = require('../db');
 const { walletAuth, optionalWalletAuth } = require('../middleware/auth');
 const taskEmitter = require('../events/taskEmitter');
@@ -11,8 +16,8 @@ const router = express.Router();
 const WEBHOOK_HANDLER_URL = process.env.WEBHOOK_HANDLER_URL || 'http://localhost:3003';
 
 // Job statuses
-const JOB_STATUSES = ['created', 'funded', 'in_progress', 'review', 'revisions', 'final_review', 'hardening', 'completed', 'disputed'];
-const TASK_STATUSES = ['pending', 'in_progress', 'completed'];
+const JOB_STATUSES = ['pending', 'interviewing', 'created', 'funded', 'in_progress', 'review', 'revisions', 'final_review', 'hardening', 'completed', 'disputed'];
+const TASK_STATUSES = ['pending', 'in_progress', 'ready_for_test', 'testing', 'completed'];
 
 // Initialize jobs tables
 db.exec(`
@@ -272,16 +277,71 @@ router.get('/:id', optionalWalletAuth, (req, res) => {
 });
 
 /**
+/**
+ * PATCH /api/jobs/:id - Update job fields (spec, title, description)
+ */
+router.patch('/:id', (req, res) => {
+  const { id } = req.params;
+  const { spec, title, description, status } = req.body;
+  
+  const job = db.prepare('SELECT * FROM jobs WHERE id = ?').get(id);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+  
+  const updates = [];
+  const values = [];
+  if (spec !== undefined) { updates.push('spec = ?'); values.push(spec); }
+  if (title !== undefined) { updates.push('title = ?'); values.push(title); }
+  if (description !== undefined) { updates.push('description = ?'); values.push(description); }
+  if (status !== undefined) { updates.push('status = ?'); values.push(status); }
+  
+  if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
+  
+  updates.push('updated_at = ?');
+  values.push(new Date().toISOString());
+  values.push(id);
+  
+  db.prepare(`UPDATE jobs SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+  
+  const updated = db.prepare('SELECT * FROM jobs WHERE id = ?').get(id);
+  res.json({ job: updated });
+});
+
+/**
+ * POST /api/jobs/:id/reset - Reset job to pending (for testing)
+ * Clears agent assignment, tasks, and deliverables
+ */
+router.post('/:id/reset', (req, res) => {
+  const { id } = req.params;
+  const job = db.prepare('SELECT * FROM jobs WHERE id = ?').get(id);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+  
+  db.prepare(`UPDATE jobs SET status = 'pending', deliverables = '[]', revision_round = 0, updated_at = ? WHERE id = ?`)
+    .run(new Date().toISOString(), id);
+  db.prepare(`DELETE FROM job_tasks WHERE job_id = ?`).run(id);
+  
+  res.json({ success: true, message: 'Job reset to pending' });
+});
+
+/**
  * POST /api/jobs/:id/claim - Claim a pending job
  * Agent claims a job that's waiting for an agent
  * Changes status to 'in_progress' and assigns the agent
  */
 router.post('/:id/claim', (req, res) => {
   const { id } = req.params;
-  const { agentId } = req.body;
+  const agentToken = req.headers['x-agent-token'];
+  let agentId = req.body.agentId; // Allow body for backwards compat
+
+  // Prefer token auth - look up agent by token
+  if (agentToken) {
+    const agentByToken = db.prepare('SELECT id FROM agents WHERE webhook_secret = ?').get(agentToken);
+    if (agentByToken) {
+      agentId = agentByToken.id;
+    }
+  }
 
   if (!agentId) {
-    return res.status(400).json({ error: 'agentId is required' });
+    return res.status(400).json({ error: 'X-Agent-Token header or agentId in body required' });
   }
 
   try {
@@ -300,8 +360,9 @@ router.post('/:id/claim', (req, res) => {
       });
     }
 
-    // Check if already claimed by a real agent
-    if (job.agent_id && job.agent_id !== 'demo-agent' && job.agent_id !== agentId) {
+    // For pending jobs, allow any agent to claim (marketplace model)
+    // Only block if job is already in_progress with a different agent
+    if (job.status !== 'pending' && job.agent_id && job.agent_id !== 'demo-agent' && job.agent_id !== agentId) {
       return res.status(409).json({ error: 'Job already claimed by another agent' });
     }
 
@@ -459,7 +520,7 @@ router.post('/:id/tasks', walletAuth, (req, res) => {
       if (!t.title || String(t.title).trim().length === 0) continue;
 
       const taskId = uuidv4();
-      const status = ['pending', 'in_progress', 'completed'].includes(t.status) ? t.status : 'pending';
+      const status = TASK_STATUSES.includes(t.status) ? t.status : 'pending';
 
       db.prepare(`
         INSERT INTO job_tasks (id, job_id, title, description, status, order_index, created_at, updated_at)
@@ -724,6 +785,7 @@ function formatJob(job) {
     description: job.description,
     priceUsdc: job.price_usdc,
     escrowTx: job.escrow_tx,
+    spec: job.spec || null,
     status: job.status,
     deliverables,
     revisionRound: job.revision_round || 0,
@@ -840,28 +902,69 @@ router.post('/:id/review-messages', optionalWalletAuth, async (req, res) => {
       if (job.deliverables) deliverables = JSON.parse(job.deliverables);
     } catch (e) { /* ignore */ }
 
-    // Build callback URL for webhook handler
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-    const host = req.headers['x-forwarded-host'] || req.get('host');
-    const callbackUrl = `${protocol}://${host}/api/jobs/${id}/review-response`;
+    // Build deliverables context
+    let deliverablesContext = '';
+    if (deliverables.length > 0) {
+      const delivs = deliverables.map((d, i) => {
+        if (typeof d === 'string') return `${i + 1}. ${d}`;
+        return `${i + 1}. ${d.label || d.title || 'Deliverable'}: ${d.url || d.link || d.description || ''}`;
+      }).join('\n');
+      deliverablesContext = `\n\nPROJECT: "${job.title || 'Untitled'}"\nDELIVERABLES:\n${delivs}`;
+    }
 
-    // Send to webhook handler
+    // Call Anthropic directly for review response
     try {
-      await axios.post(`${WEBHOOK_HANDLER_URL}/webhook/viberr-review`, {
-        type: 'review_message',
-        jobId: id,
-        userMessage: message.trim(),
-        conversationHistory: history.map(m => ({ role: m.role, content: m.content })),
-        jobContext: {
-          title: job.title,
-          description: job.description,
-          deliverables
-        },
-        callbackUrl
-      }, { timeout: 45000 });
-    } catch (webhookErr) {
-      console.error(`[Review] Webhook error:`, webhookErr.message);
-      // Don't fail the request - SSE will just not get a response
+      const messages = history.map(m => ({ role: m.role, content: m.content }));
+
+      const response = await anthropic.messages.create({
+        model: 'claude-opus-4-6',
+        max_tokens: 500,
+        system: `You are a skilled project reviewer on Viberr, a marketplace where AI agents build projects for clients. The client is reviewing a build delivered by an AI agent.
+
+Your role is to be an ACTIVE interviewer during the review — not passive. You should:
+
+1. **Ask probing follow-up questions** about their feedback:
+   - "Can you describe what you'd expect to see on the walker's dashboard?"
+   - "When you say address-based matching, should it use GPS radius or zip codes?"
+   - "Is this a must-have or nice-to-have for this round?"
+
+2. **Dig deeper** on vague feedback — don't just accept "looks good" or "change this":
+   - Ask for specifics, examples, or priorities
+   - Help them articulate what they actually want
+
+3. **Organize their feedback** into clear categories:
+   - What works well (acknowledge it)
+   - What needs changing (clarify exactly how)
+   - What's missing (understand the gap)
+
+4. **Guide the decision**:
+   - When they've given enough detail, summarize the revision list and ask "Does this capture everything?"
+   - Then suggest they click **"Submit Revision Requests"** to send it to the agent
+   - If they're happy, suggest **"Approve"** to complete the job
+
+Keep responses concise (2-4 sentences max). Be conversational, curious, and helpful — like a product manager doing a review session.${deliverablesContext}`,
+        messages
+      });
+
+      const reply = response.content[0].text;
+
+      // Save assistant response
+      const replyId = uuidv4();
+      const replyNow = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO review_messages (id, job_id, role, content, created_at)
+        VALUES (?, ?, 'assistant', ?, ?)
+      `).run(replyId, id, reply, replyNow);
+
+      // Push to SSE
+      pushToReviewSSE(id, {
+        type: 'assistant_message',
+        message: reply,
+        messageId: replyId,
+        timestamp: replyNow
+      });
+    } catch (aiErr) {
+      console.error(`[Review] Anthropic error:`, aiErr.message);
     }
 
     res.json({
@@ -1039,17 +1142,30 @@ router.post('/:id/submit-feedback', optionalWalletAuth, async (req, res) => {
         VALUES (?, ?, ?, ?, 'pending', ?, 'revision', ?, ?)
       `).run(taskId, id, `Revision round ${newRound}: Implement feedback`, feedbackSummary, orderIndex, now, now);
 
-      // Also try to parse individual revision items via webhook handler (best-effort)
+      // Parse individual revision items via Anthropic (best-effort)
       try {
-        const parseResp = await axios.post(`${WEBHOOK_HANDLER_URL}/webhook/viberr-parse-revisions`, {
-          jobId: id,
-          feedback: revisionRequests,
-          callbackUrl: `http://localhost:${process.env.PORT || 3001}/api/jobs/${id}/revision-tasks-callback`,
-          secret: 'viberr-0xclaw-secret-2026'
-        }, { timeout: 10000 });
-        console.log('[submit-feedback] Revision parse requested:', parseResp.data);
+        const parseResp = await anthropic.messages.create({
+          model: 'claude-opus-4-6',
+          max_tokens: 1000,
+          system: `Extract revision tasks from customer feedback. Return ONLY a JSON array of objects with "title" and "description" fields. Each task should be concrete and actionable. Keep titles under 60 chars. No markdown, just valid JSON.`,
+          messages: [{ role: 'user', content: `Extract revision tasks:\n\n${revisionRequests.join('\n\n---\n\n')}` }]
+        });
+        const content = parseResp.content[0].text.trim();
+        const parsed = JSON.parse(content.replace(/```json?\n?/g, '').replace(/```/g, ''));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Replace the single bulk task with parsed individual tasks
+          db.prepare('DELETE FROM job_tasks WHERE id = ?').run(taskId);
+          for (let i = 0; i < parsed.length; i++) {
+            const tid = require('uuid').v4();
+            db.prepare(`
+              INSERT INTO job_tasks (id, job_id, title, description, status, order_index, task_type, created_at, updated_at)
+              VALUES (?, ?, ?, ?, 'pending', ?, 'revision', ?, ?)
+            `).run(tid, id, parsed[i].title, parsed[i].description, orderIndex + i, now, now);
+          }
+          console.log(`[submit-feedback] Parsed ${parsed.length} revision tasks`);
+        }
       } catch (e) {
-        console.log('[submit-feedback] Could not parse revisions via webhook (using single task):', e.message);
+        console.log('[submit-feedback] Could not parse revisions (using single task):', e.message);
       }
 
       logActivity(id, req.walletAddress || 'client', 'revisions_requested', JSON.stringify({

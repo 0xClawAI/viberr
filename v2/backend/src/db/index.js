@@ -1,7 +1,10 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const dbPath = path.join(__dirname, '../../data/viberr.db');
+// Use persistent volume on Railway (/data), fallback to local for dev
+const dbPath = process.env.RAILWAY_ENVIRONMENT 
+  ? '/data/viberr.db' 
+  : path.join(__dirname, '../../data/viberr.db');
 
 // Ensure data directory exists
 const fs = require('fs');
@@ -142,7 +145,11 @@ const migrations = [
   `ALTER TABLE jobs ADD COLUMN is_demo INTEGER DEFAULT 0`,
   `ALTER TABLE jobs ADD COLUMN submitter_twitter TEXT`,
   // Add job_id to interviews for linking
-  `ALTER TABLE interviews ADD COLUMN job_id TEXT`
+  `ALTER TABLE interviews ADD COLUMN job_id TEXT`,
+  // Escrow chain job ID for linking API jobs to on-chain jobs
+  `ALTER TABLE jobs ADD COLUMN escrow_job_id TEXT`,
+  // Spec column for storing project specification
+  `ALTER TABLE jobs ADD COLUMN spec TEXT`
 ];
 
 for (const migration of migrations) {

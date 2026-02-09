@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import { WalletButton } from "./WalletButton";
@@ -17,545 +17,217 @@ interface PaymentStepProps {
   serviceName: string;
   agentName: string;
   agentId: string;
+  agentWallet: `0x${string}`;
+  specHash?: `0x${string}`;
   onSuccess?: (jobId: string) => void;
 }
 
-type TxStatus = "idle" | "approving" | "approved" | "funding" | "success" | "error";
+const ZERO_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
 
 export function PaymentStep({
   servicePrice,
   serviceName,
   agentName,
   agentId,
+  agentWallet,
+  specHash = ZERO_HASH,
   onSuccess,
 }: PaymentStepProps) {
   const { address, isConnected } = useAccount();
-  const [txStatus, setTxStatus] = useState<TxStatus>("idle");
+  const [status, setStatus] = useState<"idle" | "paying" | "funding" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [createdJobId, setCreatedJobId] = useState<bigint | null>(null);
 
-  // Calculate prices
   const platformFee = servicePrice * (PLATFORM_FEE_PERCENT / 100);
   const totalPrice = servicePrice + platformFee;
   const totalPriceWei = parseUnits(totalPrice.toString(), USDC_DECIMALS);
 
-  // Read USDC balance
-  const { data: usdcBalance, refetch: refetchBalance } = useReadContract({
+  const { data: usdcBalance } = useReadContract({
     address: CONTRACTS.USDC,
     abi: ERC20_ABI,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    query: {
-      enabled: !!address,
-    },
+    query: { enabled: !!address },
   });
 
-  // Read current allowance
-  const { data: currentAllowance, refetch: refetchAllowance } = useReadContract({
+  const { data: currentAllowance } = useReadContract({
     address: CONTRACTS.USDC,
     abi: ERC20_ABI,
     functionName: "allowance",
     args: address ? [address, CONTRACTS.ESCROW] : undefined,
-    query: {
-      enabled: !!address,
-    },
+    query: { enabled: !!address },
   });
 
-  // Format balance for display
-  const formattedBalance = usdcBalance
-    ? parseFloat(formatUnits(usdcBalance, USDC_DECIMALS)).toFixed(2)
-    : "0.00";
-
-  // Check if has enough balance
+  const formattedBalance = usdcBalance ? parseFloat(formatUnits(usdcBalance, USDC_DECIMALS)).toFixed(2) : "0.00";
   const hasEnoughBalance = usdcBalance ? usdcBalance >= totalPriceWei : false;
-
-  // Check if already approved
   const isApproved = currentAllowance ? currentAllowance >= totalPriceWei : false;
 
-  // Write contract hooks
-  const { writeContract: approveWrite, data: approveData, isPending: isApprovePending, error: approveError, reset: resetApprove } = useWriteContract();
-  const { writeContract: fundWrite, data: fundData, isPending: isFundPending, error: fundError, reset: resetFund } = useWriteContract();
+  // Contract write hooks — only approve + createJob (createJob pulls funds atomically)
+  const { writeContract: approveWrite, data: approveHash, isPending: isApprovePending, error: approveError } = useWriteContract();
+  const { writeContract: createJobWrite, data: createHash, isPending: isCreatePending, error: createError } = useWriteContract();
 
-  // Use data directly as tx hash
+  const { isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({ hash: approveHash });
+  const { isSuccess: isCreateSuccess, data: createReceipt } = useWaitForTransactionReceipt({ hash: createHash });
 
-  // Wait for approve transaction
-  const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({
-    hash: approveData,
-  });
-
-  // Wait for fund transaction
-  const { isLoading: isFundConfirming, isSuccess: isFundSuccess } = useWaitForTransactionReceipt({
-    hash: fundData,
-  });
-
-  // Handle approve success - refetch allowance when transaction succeeds
-  useEffect(() => {
-    if (isApproveSuccess) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- responding to external tx confirmation
-      setTxStatus("approved");
-      refetchAllowance();
-    }
-  }, [isApproveSuccess, refetchAllowance]);
-
-  // Handle fund success - call onSuccess callback and refetch balance
-  useEffect(() => {
-    if (isFundSuccess) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- responding to external tx confirmation
-      setTxStatus("success");
-      refetchBalance();
-      if (onSuccess) {
-        onSuccess(fundData || "mock-job-id");
-      }
-    }
-  }, [isFundSuccess, refetchBalance, onSuccess, fundData]);
-
-  // Handle errors from contract writes
-  useEffect(() => {
-    if (approveError) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- responding to external error
-      setTxStatus("error");
-      setErrorMessage(approveError.message || "Approval failed");
-    }
-  }, [approveError]);
-
-  useEffect(() => {
-    if (fundError) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- responding to external error
-      setTxStatus("error");
-      setErrorMessage(fundError.message || "Transaction failed");
-    }
-  }, [fundError]);
-
-  // Approve USDC
-  const handleApprove = () => {
-    setTxStatus("approving");
-    setErrorMessage(null);
-    approveWrite({
-      address: CONTRACTS.USDC,
-      abi: ERC20_ABI,
-      functionName: "approve",
-      args: [CONTRACTS.ESCROW, totalPriceWei],
-    });
-  };
-
-  // Fund escrow
-  const handleFund = () => {
-    setTxStatus("funding");
-    setErrorMessage(null);
-    fundWrite({
-      address: CONTRACTS.ESCROW,
+  // Create job — now also pulls USDC in one tx
+  const startCreateJob = useCallback(() => {
+    setStatus("paying");
+    createJobWrite({
+      address: CONTRACTS.ESCROW as `0x${string}`,
       abi: ESCROW_ABI,
       functionName: "createJob",
-      args: [agentId, totalPriceWei],
+      args: [agentWallet, totalPriceWei, specHash],
     });
-  };
+  }, [createJobWrite, agentWallet, totalPriceWei, specHash]);
 
-  // Reset and retry
-  const handleRetry = () => {
-    setTxStatus("idle");
+  // Chain: approve success → create job
+  useEffect(() => {
+    if (isApproveSuccess) startCreateJob();
+  }, [isApproveSuccess, startCreateJob]);
+
+  // Create success → done (funds already pulled)
+  useEffect(() => {
+    if (isCreateSuccess && createReceipt) {
+      const escrowLogs = createReceipt.logs.filter(
+        log => log.address.toLowerCase() === (CONTRACTS.ESCROW as string).toLowerCase()
+      );
+      const jobCreatedLog = escrowLogs[0];
+      if (jobCreatedLog?.topics[1]) {
+        const jobId = BigInt(jobCreatedLog.topics[1]);
+        setCreatedJobId(jobId);
+      }
+      setStatus("success");
+      if (onSuccess && createReceipt) {
+        const log = escrowLogs[0];
+        const id = log?.topics[1] ? BigInt(log.topics[1]).toString() : "0";
+        setTimeout(() => onSuccess(id), 1500);
+      }
+    }
+  }, [isCreateSuccess, createReceipt, onSuccess]);
+
+  // Handle errors
+  useEffect(() => {
+    const err = approveError || createError;
+    if (err) {
+      setStatus("error");
+      setErrorMessage(err.message?.slice(0, 100) || "Transaction failed");
+    }
+  }, [approveError, createError]);
+
+  // One-click pay: approve if needed, then createJob (which pulls funds)
+  const handlePay = () => {
+    setStatus("paying");
     setErrorMessage(null);
-    resetApprove();
-    resetFund();
-    refetchBalance();
-    refetchAllowance();
+
+    if (isApproved) {
+      startCreateJob();
+    } else {
+      approveWrite({
+        address: CONTRACTS.USDC as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: "approve",
+        args: [CONTRACTS.ESCROW as `0x${string}`, totalPriceWei],
+      });
+    }
   };
 
-  // Determine button state
-  const isProcessing =
-    isApprovePending ||
-    isApproveConfirming ||
-    isFundPending ||
-    isFundConfirming;
+  const isProcessing = status === "paying" || isApprovePending || isCreatePending;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-4">
         <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg
-            className="w-8 h-8 text-emerald-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
-            />
-          </svg>
+          <span className="text-3xl">🔒</span>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Secure Payment</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">Escrow Payment</h2>
         <p className="text-gray-400">
-          Fund your escrow to start working with {agentName}
+          Funds held in escrow until you approve the work
         </p>
       </div>
 
-      {/* Wallet Connection */}
-      <div className="bg-[#111] border border-white/10 rounded-xl p-4">
+      {/* Price Card */}
+      <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-gray-400">{serviceName}</span>
+          <span className="text-white">${servicePrice.toFixed(2)}</span>
+        </div>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-gray-400">Platform Fee ({PLATFORM_FEE_PERCENT}%)</span>
+          <span className="text-white">${platformFee.toFixed(2)}</span>
+        </div>
+        <div className="border-t border-white/10 my-3" />
         <div className="flex items-center justify-between">
-          <span className="text-gray-400">Wallet</span>
-          <WalletButton />
+          <span className="text-lg font-semibold text-white">Total</span>
+          <span className="text-2xl font-bold text-emerald-400">${totalPrice.toFixed(2)} USDC</span>
         </div>
         {isConnected && (
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400">USDC Balance</span>
-              <span
-                className={`font-medium ${
-                  hasEnoughBalance ? "text-emerald-400" : "text-red-400"
-                }`}
-              >
-                ${formattedBalance} USDC
-              </span>
-            </div>
+          <div className="mt-3 pt-3 border-t border-white/10 flex justify-between">
+            <span className="text-gray-500 text-sm">Your balance</span>
+            <span className={`text-sm font-medium ${hasEnoughBalance ? "text-emerald-400" : "text-red-400"}`}>
+              ${formattedBalance} USDC
+            </span>
           </div>
         )}
       </div>
 
-      {/* Price Breakdown */}
-      <div className="bg-[#111] border border-white/10 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Price Breakdown</h3>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-400">Service</span>
-            <span className="text-white">{serviceName}</span>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-gray-400">Agent</span>
-            <span className="text-white">{agentName}</span>
-          </div>
-
-          <div className="border-t border-white/10 my-4" />
-
-          <div className="flex items-center justify-between">
-            <span className="text-gray-400">Service Price</span>
-            <span className="text-white">${servicePrice.toFixed(2)}</span>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-gray-400">Platform Fee ({PLATFORM_FEE_PERCENT}%)</span>
-            <span className="text-white">${platformFee.toFixed(2)}</span>
-          </div>
-
-          <div className="border-t border-white/10 my-4" />
-
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-semibold text-white">Total</span>
-            <span className="text-2xl font-bold text-emerald-400">
-              ${totalPrice.toFixed(2)} USDC
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Transaction Status */}
-      {txStatus !== "idle" && (
-        <div className="bg-[#111] border border-white/10 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            Transaction Status
-          </h3>
-
-          {/* Status Steps */}
-          <div className="space-y-4">
-            {/* Approve Step */}
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  txStatus === "approving" || isApproveConfirming
-                    ? "bg-emerald-500/20"
-                    : isApproved || txStatus === "approved" || txStatus === "funding" || txStatus === "success"
-                    ? "bg-emerald-500"
-                    : "bg-white/10"
-                }`}
-              >
-                {txStatus === "approving" || isApproveConfirming ? (
-                  <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                ) : isApproved || txStatus === "approved" || txStatus === "funding" || txStatus === "success" ? (
-                  <svg
-                    className="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                ) : (
-                  <span className="text-gray-500">1</span>
-                )}
+      {/* Progress */}
+      {status !== "idle" && status !== "error" && (
+        <div className="bg-[#111] border border-emerald-500/20 rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            {status === "success" ? (
+              <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-              <div>
-                <p
-                  className={`font-medium ${
-                    txStatus === "approving" || isApproveConfirming
-                      ? "text-emerald-400"
-                      : isApproved || txStatus === "approved" || txStatus === "funding" || txStatus === "success"
-                      ? "text-white"
-                      : "text-gray-500"
-                  }`}
-                >
-                  Approve USDC
-                </p>
-                <p className="text-sm text-gray-500">
-                  {txStatus === "approving" || isApproveConfirming
-                    ? "Confirming..."
-                    : isApproved || txStatus === "approved" || txStatus === "funding" || txStatus === "success"
-                    ? "Approved"
-                    : "Pending"}
-                </p>
-              </div>
-            </div>
-
-            {/* Fund Step */}
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  txStatus === "funding" || isFundConfirming
-                    ? "bg-emerald-500/20"
-                    : txStatus === "success"
-                    ? "bg-emerald-500"
-                    : "bg-white/10"
-                }`}
-              >
-                {txStatus === "funding" || isFundConfirming ? (
-                  <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                ) : txStatus === "success" ? (
-                  <svg
-                    className="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                ) : (
-                  <span className="text-gray-500">2</span>
-                )}
-              </div>
-              <div>
-                <p
-                  className={`font-medium ${
-                    txStatus === "funding" || isFundConfirming
-                      ? "text-emerald-400"
-                      : txStatus === "success"
-                      ? "text-white"
-                      : "text-gray-500"
-                  }`}
-                >
-                  Fund Escrow
-                </p>
-                <p className="text-sm text-gray-500">
-                  {txStatus === "funding" || isFundConfirming
-                    ? "Confirming..."
-                    : txStatus === "success"
-                    ? "Complete"
-                    : "Pending"}
-                </p>
-              </div>
+            ) : (
+              <div className="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+            )}
+            <div>
+              <p className="text-white font-medium">
+                {status === "paying" ? "Processing payment..." : status === "funding" ? "Funding escrow..." : "Payment complete!"}
+              </p>
+              <p className="text-gray-500 text-sm">
+                {status === "success" ? "Redirecting..." : "Please confirm in your wallet"}
+              </p>
             </div>
           </div>
-
-          {/* Success Message */}
-          {txStatus === "success" && (
-            <div className="mt-6 p-4 bg-emerald-500/20 border border-emerald-500/30 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="font-semibold text-emerald-400">
-                    Payment Successful!
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Your escrow has been funded. Redirecting to dashboard...
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Error Message */}
-          {txStatus === "error" && errorMessage && (
-            <div className="mt-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-red-500/30 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg
-                    className="w-6 h-6 text-red-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-red-400">Transaction Failed</p>
-                  <p className="text-sm text-gray-400 mt-1 break-words">
-                    {errorMessage.length > 100
-                      ? errorMessage.slice(0, 100) + "..."
-                      : errorMessage}
-                  </p>
-                  <button
-                    onClick={handleRetry}
-                    className="mt-3 text-sm text-emerald-400 hover:text-emerald-300 transition flex items-center gap-1"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                    Retry
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Action Buttons */}
+      {/* Error */}
+      {status === "error" && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+          <p className="text-red-400 font-medium">Transaction failed</p>
+          <p className="text-gray-400 text-sm mt-1">{errorMessage}</p>
+          <button onClick={() => { setStatus("idle"); setErrorMessage(null); }} className="mt-3 text-emerald-400 text-sm hover:text-emerald-300">
+            ↻ Try again
+          </button>
+        </div>
+      )}
+
+      {/* Action Button */}
       {!isConnected ? (
-        <div className="bg-[#111] border border-emerald-500/30 rounded-xl p-6 text-center animate-fade-in">
-          <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-white mb-2">Connect Wallet to Continue</h3>
-          <p className="text-gray-400 text-sm mb-4">
-            Connect your wallet to fund the escrow and start your project with {agentName}.
-          </p>
-          <WalletButton />
+        <div className="text-center">
+          <WalletButton showBalance={true} />
         </div>
       ) : !hasEnoughBalance ? (
         <div className="text-center py-4">
-          <p className="text-red-400 mb-2">Insufficient USDC balance</p>
-          <p className="text-gray-500 text-sm">
-            You need at least ${totalPrice.toFixed(2)} USDC to fund this escrow
-          </p>
+          <p className="text-red-400">Insufficient balance (need ${totalPrice.toFixed(2)} USDC)</p>
         </div>
-      ) : txStatus === "success" ? (
+      ) : status === "idle" || status === "error" ? (
         <button
-          onClick={() => (window.location.href = "/dashboard")}
-          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-semibold transition flex items-center justify-center gap-2"
-        >
-          Go to Dashboard
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 7l5 5m0 0l-5 5m5-5H6"
-            />
-          </svg>
-        </button>
-      ) : (isApproved || txStatus === "approved") && txStatus !== "funding" ? (
-        <button
-          onClick={handleFund}
+          onClick={handlePay}
           disabled={isProcessing}
-          className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold transition flex items-center justify-center gap-2"
+          className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white py-4 rounded-xl font-semibold transition flex items-center justify-center gap-2"
         >
-          {isFundPending || isFundConfirming ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-              Fund Escrow (${totalPrice.toFixed(2)} USDC)
-            </>
-          )}
+          Pay ${totalPrice.toFixed(2)} USDC
         </button>
-      ) : (
-        <button
-          onClick={handleApprove}
-          disabled={isProcessing || txStatus === "error"}
-          className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold transition flex items-center justify-center gap-2"
-        >
-          {isApprovePending || isApproveConfirming ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Approving...
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              Approve USDC
-            </>
-          )}
-        </button>
-      )}
+      ) : null}
 
-      {/* Security Note */}
-      <p className="text-gray-500 text-sm text-center">
-        🔒 Your payment is protected by escrow until you approve the work
+      <p className="text-gray-500 text-xs text-center">
+        🔒 Protected by on-chain escrow on Base Sepolia
       </p>
     </div>
   );

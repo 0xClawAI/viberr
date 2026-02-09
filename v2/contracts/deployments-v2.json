@@ -1,0 +1,21 @@
+{
+  "network": "Base Sepolia",
+  "chainId": 84532,
+  "contracts": {
+    "MockUSDC": "0xbBBA474Bb2c04bfe726e3A734bD9F63feaC0E0a6",
+    "ViberrRegistry": "0x9bdD19072252d930c9f1018115011efFD480F41F",
+    "ViberrEscrowV1": "0xb8b8ED9d2F927A55772391B507BB978358310c9B",
+    "ViberrEscrowV2": "0x0B3a21e9f270435618Ff14455d5D29d24c2278aE"
+  },
+  "wallets": {
+    "platform": "0xD50406FcD7115cC55A88d77d3E62cE39c9fA99B1",
+    "arbiter": "0x7878084d8A7975a94B3eb6dA28b12206DED2C46f"
+  },
+  "features": [
+    "Release/Revise/Refund dispute resolution",
+    "AI Arbiter role",
+    "7-day revision deadline",
+    "Arbiter notes for revision requirements",
+    "Auto-refund after timeout"
+  ]
+}

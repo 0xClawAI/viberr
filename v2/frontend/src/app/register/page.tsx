@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { WalletButton } from "@/components/WalletButton";
 import { useIsMounted } from "@/lib/hooks";
+import { useAutoFaucet } from "@/lib/useAutoFaucet";
 
-// Loading component
 function LoadingScreen() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -19,75 +19,23 @@ function LoadingScreen() {
   );
 }
 
-// Main register form content
 function RegisterContent() {
   const mounted = useIsMounted();
   const { address, isConnected } = useAccount();
   const router = useRouter();
+  const { isReady, isLoading } = useAutoFaucet();
   
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  
-  // Form data
-  const [formData, setFormData] = useState({
-    email: "",
-    twitterHandle: "",
-  });
+  const [twitterHandle, setTwitterHandle] = useState("");
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.email.trim()) {
-      setError("Email is required");
-      return;
+  // Auto-redirect when fully funded
+  useEffect(() => {
+    if (isConnected && address && isReady) {
+      const timer = setTimeout(() => router.push("/marketplace"), 1500);
+      return () => clearTimeout(timer);
     }
-    
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address");
-      return;
-    }
+  }, [isConnected, address, isReady, router]);
 
-    setLoading(true);
-    setError("");
-
-    try {
-      // TODO: Implement actual user registration API call
-      // For now, just simulate success
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      console.log("Human signup:", {
-        email: formData.email,
-        twitterHandle: formData.twitterHandle || undefined,
-        walletAddress: address || undefined,
-      });
-      
-      setSuccess(true);
-      
-      // Redirect to dashboard after 2 seconds
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!mounted) {
-    return <LoadingScreen />;
-  }
+  if (!mounted) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
@@ -99,171 +47,105 @@ function RegisterContent() {
               <span className="text-2xl">⚡</span>
               <span className="text-xl font-bold">Viberr</span>
             </Link>
-            <div className="flex items-center gap-4">
-              <Link href="/login" className="text-gray-300 hover:text-white transition">
-                Sign In
-              </Link>
-              <WalletButton />
-            </div>
           </div>
         </div>
       </nav>
 
-      <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 min-h-screen flex items-center justify-center">
-        <div className="max-w-md w-full">
-          {/* Header */}
+      {/* Main Content */}
+      <main className="pt-24 pb-16 px-4">
+        <div className="max-w-md mx-auto">
+          {/* Logo */}
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-6">
-              🎯
+            <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/20">
+              <span className="text-4xl">🎯</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold mb-4">
-              Join Viberr
-            </h1>
+            <h1 className="text-3xl font-bold text-white mb-2">Join Viberr</h1>
             <p className="text-gray-400">
-              Create your account and discover AI agents
+              Connect your wallet to discover AI agents
             </p>
           </div>
 
-          {/* Success Message */}
-          {success && (
-            <div className="mb-6 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-lg text-emerald-400 text-center">
-              <div className="text-2xl mb-2">✓</div>
-              <p className="font-semibold mb-1">Registration Successful!</p>
-              <p className="text-sm">Redirecting to dashboard...</p>
-            </div>
-          )}
-
-          {/* Error Display */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400">
-              {error}
-            </div>
-          )}
-
-          {/* Registration Form */}
-          {!success && (
-            <form onSubmit={handleSubmit} className="bg-white/5 rounded-2xl p-8 border border-white/10">
-              {/* Email */}
-              <div className="mb-6">
-                <label htmlFor="email" className="block text-sm font-medium mb-2">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="your@email.com"
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"
-                />
+          {/* Wallet Connection Card */}
+          <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
+            {!isConnected ? (
+              /* Not Connected State */
+              <div className="text-center">
+                <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-white mb-2">Connect Wallet</h2>
+                <p className="text-gray-400 text-sm mb-6">
+                  Connect your wallet to get started. We&apos;ll give you testnet USDC automatically.
+                </p>
+                <WalletButton />
               </div>
+            ) : isLoading ? (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-8 h-8 border-3 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                </div>
+                <h2 className="text-xl font-semibold text-white mb-2">Funding Your Wallet</h2>
+                <p className="text-gray-400 text-sm">
+                  Sending testnet ETH + USDC (no signature needed)...
+                </p>
+              </div>
+            ) : isReady ? (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-white mb-2">You&apos;re All Set!</h2>
+                <div className="bg-white/5 rounded-lg px-4 py-3 mb-6">
+                  <span className="text-emerald-400 font-mono text-sm">
+                    {address?.slice(0, 6)}...{address?.slice(-4)}
+                  </span>
+                </div>
+                <p className="text-gray-500 text-xs">
+                  Redirecting to marketplace...
+                </p>
+              </div>
+            ) : (
+              <div className="text-center">
+                <WalletButton />
+              </div>
+            )}
 
-              {/* Twitter Handle (Optional) */}
-              <div className="mb-6">
-                <label htmlFor="twitterHandle" className="block text-sm font-medium mb-2">
-                  Twitter Handle{" "}
-                  <span className="text-gray-500 text-xs font-normal">(optional)</span>
+            {/* Optional Twitter - only show when they have USDC */}
+            {isConnected && isReady && (
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Twitter Handle <span className="text-gray-600">(optional)</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-                    @
-                  </span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">@</span>
                   <input
                     type="text"
-                    id="twitterHandle"
-                    name="twitterHandle"
-                    value={formData.twitterHandle}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        twitterHandle: e.target.value.replace("@", ""),
-                      }))
-                    }
+                    value={twitterHandle}
+                    onChange={(e) => setTwitterHandle(e.target.value.replace("@", ""))}
                     placeholder="yourhandle"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 transition"
                   />
                 </div>
               </div>
+            )}
+          </div>
 
-              {/* Wallet Connection (Optional) */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">
-                  Wallet{" "}
-                  <span className="text-gray-500 text-xs font-normal">(optional)</span>
-                </label>
-                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                  {isConnected && address ? (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-emerald-400">✓</span>
-                        <span className="text-sm text-gray-300">
-                          {address.slice(0, 6)}...{address.slice(-4)}
-                        </span>
-                      </div>
-                      <WalletButton />
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-sm text-gray-400 mb-3">
-                        Connect your wallet for future Web3 features
-                      </p>
-                      <WalletButton />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <span className="animate-spin">⏳</span> Creating Account...
-                  </>
-                ) : (
-                  <>Create Account</>
-                )}
-              </button>
-
-              {/* Terms */}
-              <p className="text-xs text-gray-500 text-center mt-4">
-                By signing up, you agree to our{" "}
-                <Link href="/terms" className="text-emerald-400 hover:text-emerald-300">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href="/privacy" className="text-emerald-400 hover:text-emerald-300">
-                  Privacy Policy
-                </Link>
-              </p>
-            </form>
-          )}
-
-          {/* Agent Registration Link */}
-          <div className="mt-6 text-center">
-            <p className="text-gray-500 text-sm mb-3">
+          {/* Links */}
+          <div className="text-center mt-6">
+            <p className="text-gray-500 text-sm mb-2">
               Are you an AI agent looking to offer services?
             </p>
             <Link
               href="/for-agents"
-              className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition text-sm font-medium"
+              className="text-emerald-400 hover:text-emerald-300 text-sm font-medium transition"
             >
               Learn about Agent Registration →
             </Link>
           </div>
-
-          {/* Already Have Account */}
-          <p className="text-center text-gray-500 text-sm mt-8">
-            Already have an account?{" "}
-            <Link href="/login" className="text-emerald-400 hover:text-emerald-300 transition">
-              Sign In
-            </Link>
-          </p>
         </div>
       </main>
     </div>

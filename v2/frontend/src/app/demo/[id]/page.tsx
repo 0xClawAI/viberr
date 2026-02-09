@@ -3,33 +3,49 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { Header } from "@/components/Header";
 import { SimpleMarkdown } from "@/components/SimpleMarkdown";
+import { API_BASE_URL } from "@/lib/config";
 
-// Demo job states
-interface DemoJob {
+// Types
+interface Job {
   id: string;
   title: string;
   description: string;
   spec: string;
-  status: "pending" | "interview_complete" | "ready_to_start";
-  agent: {
-    name: string;
-    avatar: string;
-    bio: string;
-  };
-  phases: {
-    id: string;
-    label: string;
-    icon: string;
-    status: "pending" | "current" | "complete";
-  }[];
-  tasks: {
-    id: string;
-    title: string;
-    status: "todo" | "in_progress" | "done";
-    phase: string;
-  }[];
+  status: string;
+  agentId: string;
+  agentName?: string;
+  clientWallet: string;
+  priceUsdc: number;
+  deliverables: string[];
   createdAt: string;
+  updatedAt: string;
+}
+
+interface Agent {
+  id: string;
+  name: string;
+  avatarUrl: string;
+  walletAddress: string;
+}
+
+// Map job status to phase
+function getPhaseFromStatus(status: string): number {
+  const phaseMap: Record<string, number> = {
+    'pending': 0,
+    'interviewing': 0,
+    'created': 1,
+    'funded': 1,
+    'in_progress': 2,
+    'review': 3,
+    'revisions': 4,
+    'final_review': 5,
+    'hardening': 6,
+    'completed': 7,
+    'disputed': 3,
+  };
+  return phaseMap[status] ?? 1;
 }
 
 // Project phases
@@ -40,148 +56,43 @@ const PROJECT_PHASES = [
   { id: "review_1", label: "Review 1", icon: "👀" },
   { id: "revisions", label: "Revisions", icon: "✏️" },
   { id: "final_review", label: "Final Review", icon: "✅" },
-  { id: "live", label: "Live Site", icon: "🚀" },
+  { id: "hardening", label: "Hardening", icon: "🔒" },
+  { id: "live", label: "Completed", icon: "🚀" },
 ];
-
-// Build demo job from localStorage data or create mock
-function getDemoJob(id: string, storedData: Record<string, unknown> | null): DemoJob {
-  // If we have stored data from the interview, use it
-  if (storedData && storedData.spec) {
-    return {
-      id,
-      title: (storedData.title as string) || "Your Project",
-      description: (storedData.description as string) || "",
-      spec: storedData.spec as string,
-      status: (storedData.status as DemoJob["status"]) || "ready_to_start",
-      agent: (storedData.agent as DemoJob["agent"]) || {
-        name: "AI Agent",
-        avatar: "🤖",
-        bio: "AI-powered development",
-      },
-      phases: PROJECT_PHASES.map((p, idx) => ({
-        ...p,
-        status: idx === 0 ? "complete" : idx === 1 ? "current" : "pending",
-      })),
-      tasks: generateTasksFromSpec(storedData.spec as string),
-      createdAt: (storedData.createdAt as string) || new Date().toISOString(),
-    };
-  }
-
-  // Fallback to mock data
-  return {
-    id,
-    title: "Custom Web Application",
-    description: "A modern web application with user authentication, dashboard, and API integration.",
-    spec: `# Project Specification
-
-## Overview
-Build a custom web application with the following features:
-
-## Core Features
-- User authentication (signup, login, password reset)
-- Dashboard with analytics widgets
-- RESTful API integration
-- Responsive design (mobile-first)
-
-## Technical Stack
-- Frontend: React + TypeScript + Tailwind CSS
-- Backend: Node.js + Express
-- Database: PostgreSQL
-- Deployment: Vercel / Railway
-
-## Deliverables
-1. Complete source code with documentation
-2. Deployed production application
-3. Admin panel access
-4. 14-day support period
-
-## Timeline
-Estimated completion: 7 days`,
-    status: "ready_to_start",
-    agent: {
-      name: "CodeCraft",
-      avatar: "👨‍💻",
-      bio: "Full-stack development specialist with expertise in React and Node.js",
-    },
-    phases: PROJECT_PHASES.map((p, idx) => ({
-      ...p,
-      status: idx === 0 ? "complete" : idx === 1 ? "current" : "pending",
-    })),
-    tasks: [
-      { id: "t1", title: "Setup project structure and tooling", status: "todo", phase: "sprint_1" },
-      { id: "t2", title: "Configure database schema", status: "todo", phase: "sprint_1" },
-      { id: "t3", title: "Build authentication system", status: "todo", phase: "sprint_2" },
-      { id: "t4", title: "Create API endpoints", status: "todo", phase: "sprint_2" },
-      { id: "t5", title: "Build dashboard UI", status: "todo", phase: "sprint_3" },
-      { id: "t6", title: "Implement responsive design", status: "todo", phase: "sprint_3" },
-      { id: "t7", title: "Testing & QA", status: "todo", phase: "sprint_5" },
-      { id: "t8", title: "Deployment & documentation", status: "todo", phase: "sprint_5" },
-    ],
-    createdAt: new Date().toISOString(),
-  };
-}
-
-// Generate tasks from spec content
-function generateTasksFromSpec(spec: string): DemoJob["tasks"] {
-  const defaultTasks = [
-    { id: "t1", title: "Setup project structure and tooling", status: "todo" as const, phase: "sprint_1" },
-    { id: "t2", title: "Configure database/backend", status: "todo" as const, phase: "sprint_1" },
-    { id: "t3", title: "Build core features", status: "todo" as const, phase: "sprint_2" },
-    { id: "t4", title: "Create API endpoints", status: "todo" as const, phase: "sprint_2" },
-    { id: "t5", title: "Build frontend UI", status: "todo" as const, phase: "sprint_3" },
-    { id: "t6", title: "Implement responsive design", status: "todo" as const, phase: "sprint_3" },
-    { id: "t7", title: "Testing & QA", status: "todo" as const, phase: "sprint_5" },
-    { id: "t8", title: "Deployment & documentation", status: "todo" as const, phase: "sprint_5" },
-  ];
-
-  // Try to extract features from spec to customize tasks
-  const features = spec.match(/[-•]\s*(.+)/g);
-  if (features && features.length >= 3) {
-    const extracted = features.slice(0, 4).map((f, i) => ({
-      id: `t${i + 3}`,
-      title: f.replace(/^[-•]\s*/, "").trim(),
-      status: "todo" as const,
-      phase: `sprint_${Math.floor(i / 2) + 2}`,
-    }));
-    return [
-      defaultTasks[0],
-      defaultTasks[1],
-      ...extracted,
-      defaultTasks[6],
-      defaultTasks[7],
-    ];
-  }
-
-  return defaultTasks;
-}
 
 // Status badge
 function StatusBadge({ status }: { status: string }) {
-  const config = {
-    pending: { bg: "bg-gray-500/20", text: "text-gray-300", label: "Pending" },
-    interview_complete: { bg: "bg-blue-500/20", text: "text-blue-300", label: "Interview Complete" },
-    ready_to_start: { bg: "bg-emerald-500/20", text: "text-emerald-300", label: "Ready to Start" },
-  }[status] || { bg: "bg-gray-500/20", text: "text-gray-300", label: status };
+  const configs: Record<string, { bg: string; text: string; label: string }> = {
+    pending: { bg: "bg-gray-500/20", text: "text-gray-300", label: "Waiting for Agent" },
+    interviewing: { bg: "bg-blue-500/20", text: "text-blue-300", label: "Interview" },
+    created: { bg: "bg-yellow-500/20", text: "text-yellow-300", label: "Awaiting Payment" },
+    funded: { bg: "bg-emerald-500/20", text: "text-emerald-300", label: "Funded" },
+    in_progress: { bg: "bg-amber-500/20", text: "text-amber-300", label: "Building" },
+    review: { bg: "bg-purple-500/20", text: "text-purple-300", label: "In Review" },
+    revisions: { bg: "bg-orange-500/20", text: "text-orange-300", label: "Revisions" },
+    final_review: { bg: "bg-indigo-500/20", text: "text-indigo-300", label: "Final Review" },
+    hardening: { bg: "bg-cyan-500/20", text: "text-cyan-300", label: "Hardening" },
+    completed: { bg: "bg-emerald-500/20", text: "text-emerald-400", label: "✓ Completed" },
+    disputed: { bg: "bg-red-500/20", text: "text-red-300", label: "Disputed" },
+  };
+  const config = configs[status] || { bg: "bg-gray-500/20", text: "text-gray-300", label: status };
 
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
-      <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+      {status !== 'completed' && <span className="w-2 h-2 bg-current rounded-full animate-pulse" />}
       {config.label}
     </span>
   );
 }
 
 // Checkpoint bar
-function CheckpointBar({ phases }: { phases: DemoJob["phases"] }) {
-  const activeIdx = phases.findIndex(p => p.status === "current");
-
+function CheckpointBar({ currentPhase }: { currentPhase: number }) {
   return (
     <div className="bg-[#111] border border-white/10 rounded-2xl p-6">
       <div className="flex items-center mb-4">
-        {phases.map((phase, idx) => {
-          const isComplete = phase.status === "complete";
-          const isCurrent = phase.status === "current";
-          const isPending = phase.status === "pending";
+        {PROJECT_PHASES.map((phase, idx) => {
+          const isComplete = idx < currentPhase;
+          const isCurrent = idx === currentPhase;
 
           return (
             <div key={phase.id} className="flex items-center flex-1 last:flex-none">
@@ -199,10 +110,10 @@ function CheckpointBar({ phases }: { phases: DemoJob["phases"] }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
-                  <span className={isPending ? "opacity-30" : ""}>{phase.icon}</span>
+                  <span className={!isCurrent ? "opacity-30" : ""}>{phase.icon}</span>
                 )}
               </div>
-              {idx < phases.length - 1 && (
+              {idx < PROJECT_PHASES.length - 1 && (
                 <div className={`flex-1 h-0.5 mx-2 ${isComplete ? "bg-emerald-500" : "bg-white/10"}`} />
               )}
             </div>
@@ -210,12 +121,12 @@ function CheckpointBar({ phases }: { phases: DemoJob["phases"] }) {
         })}
       </div>
       <div className="flex">
-        {phases.map((phase, idx) => (
-          <div key={phase.id} className={`flex-shrink-0 ${idx < phases.length - 1 ? "flex-1" : ""}`}>
+        {PROJECT_PHASES.map((phase, idx) => (
+          <div key={phase.id} className={`flex-shrink-0 ${idx < PROJECT_PHASES.length - 1 ? "flex-1" : ""}`}>
             <div className="w-10">
               <span className={`text-[11px] whitespace-nowrap block text-center -ml-2 ${
-                phase.status === "complete" ? "text-emerald-400" :
-                phase.status === "current" ? "text-white font-semibold" :
+                idx < currentPhase ? "text-emerald-400" :
+                idx === currentPhase ? "text-white font-semibold" :
                 "text-gray-600"
               }`}>
                 {phase.label}
@@ -224,138 +135,32 @@ function CheckpointBar({ phases }: { phases: DemoJob["phases"] }) {
           </div>
         ))}
       </div>
-      <div className="flex items-center justify-between pt-4 mt-4 border-t border-white/10">
-        <div className="flex items-center gap-3">
-          <span className="text-lg">{phases[activeIdx]?.icon || "📋"}</span>
-          <div>
-            <p className="text-white font-medium">{phases[activeIdx]?.label || "Planning"}</p>
-            <p className="text-sm text-gray-400">Agent will begin work shortly</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="text-emerald-400 font-bold text-lg">0%</p>
-          <p className="text-xs text-gray-500">0/8 tasks</p>
-        </div>
-      </div>
     </div>
   );
 }
 
-// Spec section
-function SpecSection({ spec, isExpanded, onToggle }: { spec: string; isExpanded: boolean; onToggle: () => void }) {
-  return (
-    <div className="bg-[#111] border border-white/10 rounded-xl overflow-hidden">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between p-6 text-left hover:bg-white/5 transition"
-      >
-        <h3 className="text-lg font-semibold text-white">Project Specification</h3>
-        <svg
-          className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {isExpanded && (
-        <div className="px-6 pb-6 border-t border-white/10">
-          <div className="mt-4">
-            <SimpleMarkdown content={spec} className="text-gray-300 text-sm leading-relaxed" />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+// Deliverables section (for completed jobs)
+function DeliverablesSection({ deliverables }: { deliverables: string[] }) {
+  if (!deliverables || deliverables.length === 0) return null;
 
-// Task card
-function TaskCard({ task }: { task: DemoJob["tasks"][0] }) {
   return (
-    <div className="bg-[#0a0a0a] border border-white/10 rounded-lg p-4">
-      <p className="text-white text-sm font-medium">{task.title}</p>
-    </div>
-  );
-}
-
-// Kanban column
-function KanbanColumn({ title, tasks, icon, accentColor }: {
-  title: string;
-  tasks: DemoJob["tasks"];
-  icon: string;
-  accentColor: string;
-}) {
-  return (
-    <div className="bg-[#111] border border-white/10 rounded-xl flex flex-col min-w-[280px]" style={{ minHeight: "200px" }}>
-      <div className="flex items-center gap-3 p-5 pb-3 border-b border-white/5">
-        <span className="text-lg">{icon}</span>
-        <h3 className="font-semibold text-white">{title}</h3>
-        <span className={`ml-auto text-xs px-2.5 py-1 rounded-full ${accentColor}`}>{tasks.length}</span>
-      </div>
-      <div className="space-y-3 p-5 pt-3">
-        {tasks.length > 0 ? (
-          tasks.map(task => <TaskCard key={task.id} task={task} />)
-        ) : (
-          <div className="text-center py-8 text-gray-500 text-sm">No tasks</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Action buttons (all disabled for demo)
-function ActionButtons() {
-  return (
-    <div className="bg-[#111] border border-white/10 rounded-xl p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Actions</h3>
+    <div className="bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border border-emerald-500/30 rounded-2xl p-6">
+      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+        <span>🎁</span> Deliverables
+      </h3>
       <div className="space-y-3">
-        <button
-          disabled
-          className="w-full py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 bg-emerald-500/20 text-emerald-400/50 border border-emerald-500/20 cursor-not-allowed"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-          Approve & Release Payment
-        </button>
-        <button
-          disabled
-          className="w-full py-3 rounded-xl font-medium transition flex items-center justify-center gap-2 bg-amber-500/10 text-amber-400/50 border border-amber-500/20 cursor-not-allowed"
-        >
-          💰 Tip Agent
-        </button>
-        <button
-          disabled
-          className="w-full py-3 rounded-xl font-medium transition flex items-center justify-center gap-2 bg-red-500/10 text-red-400/50 border border-red-500/20 cursor-not-allowed"
-        >
-          ⚠️ Report Issue
-        </button>
-      </div>
-      <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-        <p className="text-xs text-emerald-400">
-          ✨ <strong>Demo Mode:</strong> Your project is ready to begin! In a real job, the agent would start working now and you'd see live task updates here.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// Agent card
-function AgentCard({ agent }: { agent: DemoJob["agent"] }) {
-  return (
-    <div className="bg-[#111] border border-white/10 rounded-xl p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Assigned Agent</h3>
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 bg-gradient-to-br from-emerald-500/30 to-blue-500/30 rounded-xl flex items-center justify-center text-2xl">
-          {agent.avatar}
-        </div>
-        <div>
-          <h4 className="text-white font-semibold">{agent.name}</h4>
-          <p className="text-sm text-gray-400 mt-1">{agent.bio}</p>
-          <div className="flex gap-2 mt-2">
-            <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full">✓ Verified</span>
-            <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full">15 jobs</span>
+        {deliverables.map((item, idx) => (
+          <div key={idx} className="flex items-center gap-3 bg-black/20 rounded-lg p-3">
+            <span className="text-emerald-400">✓</span>
+            {item.startsWith("http") ? (
+              <a href={item} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
+                {item}
+              </a>
+            ) : (
+              <span className="text-white">{item}</span>
+            )}
           </div>
-        </div>
+        ))}
       </div>
     </div>
   );
@@ -365,117 +170,314 @@ function AgentCard({ agent }: { agent: DemoJob["agent"] }) {
 export default function DemoJobDashboard() {
   const params = useParams();
   const jobId = params.id as string;
-  const [job, setJob] = useState<DemoJob | null>(null);
+  
+  const [job, setJob] = useState<Job | null>(null);
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [specExpanded, setSpecExpanded] = useState(false);
+  const [claimed, setClaimed] = useState(false);
 
+  // Fetch job data from API
   useEffect(() => {
-    // Load demo job from localStorage
-    const stored = localStorage.getItem(`viberr_demo_${jobId}`);
-    const storedData = stored ? JSON.parse(stored) : null;
-    
-    // Build job from stored data (from interview) or use mock
-    const demoJob = getDemoJob(jobId, storedData);
-    setJob(demoJob);
-    
-    // Save back to localStorage (ensures consistent format)
-    localStorage.setItem(`viberr_demo_${jobId}`, JSON.stringify(demoJob));
+    async function fetchJobData() {
+      try {
+        const jobRes = await fetch(`${API_BASE_URL}/api/jobs/${jobId}`);
+        if (!jobRes.ok) {
+          // Try localStorage fallback for demo
+          const stored = localStorage.getItem(`viberr_demo_${jobId}`);
+          if (stored) {
+            const data = JSON.parse(stored);
+            setJob({
+              id: jobId,
+              title: data.title || "Demo Project",
+              description: data.description || "",
+              spec: data.spec || "",
+              status: data.status || "pending",
+              agentId: data.agent?.id || "demo-agent",
+              agentName: data.agent?.name,
+              clientWallet: "demo-user",
+              priceUsdc: 0,
+              deliverables: [],
+              createdAt: data.createdAt || new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
+            if (data.agent) {
+              setAgent({
+                id: data.agent.id || "demo-agent",
+                name: data.agent.name || "AI Agent",
+                avatarUrl: data.agent.avatar || "🤖",
+                walletAddress: "",
+              });
+            }
+            setLoading(false);
+            return;
+          }
+          throw new Error("Job not found");
+        }
+        
+        const jobData = await jobRes.json();
+        const prevStatus = job?.status;
+        setJob(jobData.job);
+        if (jobData.agent) {
+          setAgent(jobData.agent);
+        }
+        
+        // Detect when job transitions from pending to claimed
+        if (prevStatus === "pending" && jobData.job.status !== "pending") {
+          setClaimed(true);
+        }
+        // Also show claimed if we load and it's already claimed
+        if (!prevStatus && jobData.job.status !== "pending" && jobData.job.status !== "created") {
+          setClaimed(true);
+        }
+      } catch (err) {
+        console.error("Failed to fetch job:", err);
+        setError(err instanceof Error ? err.message : "Failed to load job");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchJobData();
+    // Poll for updates
+    const interval = setInterval(fetchJobData, 5000);
+    return () => clearInterval(interval);
   }, [jobId]);
 
-  if (!job) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+        <div className="text-center">
+          <div className="w-12 h-12 border-3 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Loading project...</p>
+        </div>
       </div>
     );
   }
 
-  const todoTasks = job.tasks.filter(t => t.status === "todo");
-  const inProgressTasks = job.tasks.filter(t => t.status === "in_progress");
-  const doneTasks = job.tasks.filter(t => t.status === "done");
+  if (error || !job) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <span className="text-4xl mb-4 block">😕</span>
+          <h1 className="text-xl font-bold text-white mb-2">Job Not Found</h1>
+          <p className="text-gray-400 mb-6">{error || "This job doesn't exist or has been removed."}</p>
+          <Link href="/marketplace" className="text-emerald-400 hover:underline">
+            ← Back to Marketplace
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const currentPhase = getPhaseFromStatus(job.status);
+  const isCompleted = job.status === "completed";
+  const deliverables = job.deliverables ? (typeof job.deliverables === 'string' ? JSON.parse(job.deliverables) : job.deliverables) : [];
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/90 backdrop-blur">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-white">
-            Viberr<span className="text-emerald-400">.</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-400">Demo Job</span>
-            <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm font-medium">
-              {jobId}
-            </span>
+      <Header />
+
+      {/* Claimed alert banner with link */}
+      {claimed && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-xl px-4 animate-in slide-in-from-top">
+          <div className="bg-gradient-to-r from-purple-600/90 to-emerald-600/90 backdrop-blur-md border border-white/20 rounded-2xl p-5 shadow-2xl shadow-emerald-500/20">
+            <div className="flex items-center gap-4">
+              <span className="text-3xl">🎉</span>
+              <div className="flex-1">
+                <p className="text-white font-semibold">
+                  Claimed by {agent?.name || "an AI agent"}!
+                </p>
+                <p className="text-white/70 text-sm mt-0.5">
+                  Your project is being built. Track live progress:
+                </p>
+              </div>
+              <Link
+                href={`/jobs/${jobId}`}
+                className="bg-white text-black px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors whitespace-nowrap"
+              >
+                View Job →
+              </Link>
+            </div>
           </div>
         </div>
-      </header>
+      )}
 
-      {/* Demo banner */}
-      <div className="bg-gradient-to-r from-emerald-500/20 to-blue-500/20 border-b border-emerald-500/30">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <p className="text-sm text-center text-emerald-300">
-            🎮 <strong>Demo Mode</strong> — This is what a real job dashboard looks like. All interactive features are disabled for preview.
-          </p>
+      {/* Status banner */}
+      {isCompleted ? (
+        <div className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 border-b border-emerald-500/30">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <p className="text-sm text-center text-emerald-300">
+              🎉 <strong>Project Completed!</strong> — All deliverables have been submitted.
+            </p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-gradient-to-r from-emerald-500/20 to-blue-500/20 border-b border-emerald-500/30">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <p className="text-sm text-center text-emerald-300">
+              🔨 <strong>Demo Dashboard</strong> — Your project at a glance
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-8 pt-24">
         {/* Title row */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white">{job.title}</h1>
-            <p className="text-gray-400 mt-1">{job.description}</p>
+            {job.description && <p className="text-gray-400 mt-1">{job.description.slice(0, 150)}</p>}
           </div>
           <StatusBadge status={job.status} />
         </div>
 
-        {/* Progress */}
+        {/* Progress bar */}
         <div className="mb-8">
-          <CheckpointBar phases={job.phases} />
+          <CheckpointBar currentPhase={currentPhase} />
         </div>
+
+        {/* Deliverables (if completed) */}
+        {isCompleted && deliverables.length > 0 && (
+          <div className="mb-8">
+            <DeliverablesSection deliverables={deliverables} />
+          </div>
+        )}
 
         {/* Two column layout */}
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main column */}
           <div className="lg:col-span-2 space-y-8">
             {/* Spec */}
-            <SpecSection
-              spec={job.spec}
-              isExpanded={specExpanded}
-              onToggle={() => setSpecExpanded(!specExpanded)}
-            />
-
-            {/* Kanban */}
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-4">Task Board</h3>
-              <div className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto pb-2">
-                <KanbanColumn
-                  title="Todo"
-                  tasks={todoTasks}
-                  icon="📋"
-                  accentColor="bg-gray-500/20 text-gray-300"
-                />
-                <KanbanColumn
-                  title="In Progress"
-                  tasks={inProgressTasks}
-                  icon="🔨"
-                  accentColor="bg-yellow-500/20 text-yellow-300"
-                />
-                <KanbanColumn
-                  title="Done"
-                  tasks={doneTasks}
-                  icon="✅"
-                  accentColor="bg-emerald-500/20 text-emerald-300"
-                />
+            {job.spec && (
+              <div className="bg-[#111] border border-white/10 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setSpecExpanded(!specExpanded)}
+                  className="w-full flex items-center justify-between p-6 text-left hover:bg-white/5 transition"
+                >
+                  <h3 className="text-lg font-semibold text-white">📋 Project Specification</h3>
+                  <svg
+                    className={`w-5 h-5 text-gray-400 transition-transform ${specExpanded ? "rotate-180" : ""}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {specExpanded && (
+                  <div className="px-6 pb-6 border-t border-white/10">
+                    <div className="mt-4">
+                      <SimpleMarkdown content={job.spec} className="text-gray-300 text-sm leading-relaxed" />
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+
+            {/* Waiting / In Progress info */}
+            {!isCompleted && (
+              <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+                {job.status === "pending" ? (
+                  <div className="flex items-center gap-4">
+                    <div className="w-3 h-3 bg-amber-400 rounded-full animate-pulse" />
+                    <div>
+                      <p className="text-white font-medium">Waiting for an agent to claim this job</p>
+                      <p className="text-gray-500 text-sm mt-1">An AI agent will pick this up shortly and begin building.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse" />
+                    <div>
+                      <p className="text-white font-medium">
+                        {agent?.name || "An agent"} is working on this project
+                      </p>
+                      <p className="text-gray-500 text-sm mt-1">
+                        <Link href={`/jobs/${jobId}`} className="text-emerald-400 hover:underline">
+                          View full job progress →
+                        </Link>
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <AgentCard agent={job.agent} />
-            <ActionButtons />
+            {/* Agent Card */}
+            <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Assigned Agent</h3>
+              {agent || job.status !== "pending" ? (
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-emerald-500/30 to-blue-500/30 rounded-xl flex items-center justify-center text-2xl">
+                    {agent?.avatarUrl?.startsWith("http") ? (
+                      <img src={agent.avatarUrl} alt="" className="w-full h-full rounded-xl object-cover" />
+                    ) : (
+                      agent?.avatarUrl || "🤖"
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-white font-semibold">{agent?.name || job.agentName || "AI Agent"}</h4>
+                    <div className="flex gap-2 mt-2">
+                      <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full">✓ Verified</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <span className="text-3xl block mb-2">⏳</span>
+                  <p className="text-gray-400 text-sm">Waiting for an agent to claim</p>
+                </div>
+              )}
+            </div>
+
+            {/* Job Info */}
+            <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Job Details</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Price</span>
+                  <span className="text-white font-medium">
+                    {job.priceUsdc > 0 ? `$${job.priceUsdc} USDC` : "Free Demo"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Created</span>
+                  <span className="text-white">{new Date(job.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Status</span>
+                  <span className="text-emerald-400 capitalize">{job.status.replace(/_/g, " ")}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="bg-[#111] border border-white/10 rounded-xl p-6">
+              {isCompleted ? (
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-center">
+                  <span className="text-emerald-400 text-2xl block mb-2">🎉</span>
+                  <p className="text-emerald-400 font-medium">Project Complete!</p>
+                  <p className="text-sm text-gray-400 mt-1">All work has been delivered</p>
+                </div>
+              ) : job.status !== "pending" ? (
+                <Link
+                  href={`/jobs/${jobId}`}
+                  className="block w-full bg-emerald-500 hover:bg-emerald-600 text-white text-center px-4 py-3 rounded-lg font-medium transition-colors"
+                >
+                  View Full Job Page →
+                </Link>
+              ) : (
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-sm text-blue-400 text-center">
+                    💡 Your job is listed. An agent will claim it soon!
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>

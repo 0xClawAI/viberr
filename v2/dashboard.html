@@ -1,531 +1,280 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Viberr v2 - Dashboard</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0d1117;
-      color: #c9d1d9;
-      min-height: 100vh;
-      padding: 20px;
-    }
-    
-    /* Header with stats */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-    
-    .project-name { font-size: 26px; font-weight: 700; color: #f0f6fc; }
-    
-    .stats-row {
-      display: flex;
-      gap: 20px;
-    }
-    
-    .stat-card {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      padding: 12px 20px;
-      text-align: center;
-    }
-    
-    .stat-value { font-size: 24px; font-weight: 700; color: #7ee787; }
-    .stat-value.pending { color: #ffa657; }
-    .stat-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; }
-    
-    /* Phase Tabs Container */
-    .phase-tabs-container {
-      display: inline-block;
-    }
-    
-    /* Sprint Timeline */
-    .sprint-timeline {
-      position: relative;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      padding: 0 8px;
-      margin-top: 20px;
-      margin-bottom: 8px;
-    }
-    
-    .sprint-segment {
-      height: 3px;
-      background: #30363d;
-      position: relative;
-    }
-    
-    .sprint-segment-progress {
-      position: absolute;
-      top: 0;
-      left: 0;
-      height: 100%;
-      background: #7ee787;
-      transition: width 0.3s;
-    }
-    
-    .sprint-checkpoint {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #0d1117;
-      border: 2px solid #30363d;
-      position: relative;
-      z-index: 2;
-      flex-shrink: 0;
-    }
-    
-    .sprint-checkpoint.active { border-color: #238636; background: #238636; }
-    .sprint-checkpoint.complete { border-color: #7ee787; background: #7ee787; }
-    
-    .sprint-checkpoint-label {
-      position: absolute;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 9px;
-      color: #6e7681;
-      white-space: nowrap;
-    }
-    
-    .sprint-checkpoint.active .sprint-checkpoint-label { color: #7ee787; }
-    .sprint-checkpoint.complete .sprint-checkpoint-label { color: #7ee787; }
-    
-    /* Phase Tabs */
-    .phase-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 1px solid #30363d;
-    }
-    
-    .phase-tab {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      border-radius: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-size: 13px;
-      font-weight: 500;
-    }
-    
-    .phase-tab.pending { background: #21262d; color: #6e7681; }
-    .phase-tab.active { background: #238636; color: white; }
-    .phase-tab.complete { background: #1f6feb; color: white; }
-    .phase-tab.selected { box-shadow: 0 0 0 2px #58a6ff; }
-    
-    .phase-dot { width: 6px; height: 6px; border-radius: 50%; }
-    .phase-tab.pending .phase-dot { background: #484f58; }
-    .phase-tab.active .phase-dot { background: #7ee787; animation: pulse 2s infinite; }
-    .phase-tab.complete .phase-dot { background: #a5d6ff; }
-    
-    .phase-task-count {
-      background: rgba(0,0,0,0.2);
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 11px;
-      margin-left: 4px;
-    }
-    
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    
-    /* Main Layout */
-    .main-layout {
-      display: grid;
-      grid-template-columns: 1fr 280px;
-      gap: 20px;
-    }
-    
-    @media (max-width: 1000px) {
-      .main-layout { grid-template-columns: 1fr; }
-      .sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-    }
-    
-    @media (max-width: 600px) {
-      .sidebar { grid-template-columns: 1fr; }
-      .board { grid-template-columns: 1fr 1fr; }
-    }
-    
-    /* Kanban Board */
-    .board {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-    }
-    
-    .column {
-      background: #161b22;
-      border-radius: 8px;
-      padding: 12px;
-      min-height: 400px;
-    }
-    
-    .column-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #30363d;
-    }
-    
-    .column.todo .column-header { border-color: #6e7681; }
-    .column.in_progress .column-header { border-color: #1f6feb; }
-    .column.testing .column-header { border-color: #ffa657; }
-    .column.done .column-header { border-color: #238636; }
-    
-    .column-title { font-size: 12px; font-weight: 600; color: #8b949e; text-transform: uppercase; }
-    .column-count { background: #30363d; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
-    
-    /* Task Cards */
-    .task-card {
-      background: #21262d;
-      border: 1px solid #30363d;
-      border-radius: 6px;
-      padding: 10px;
-      margin-bottom: 8px;
-      transition: all 0.15s;
-      cursor: default;
-    }
-    
-    .task-card:hover { border-color: #58a6ff; transform: translateY(-1px); }
-    .task-id { font-size: 10px; color: #6e7681; font-weight: 600; margin-bottom: 4px; }
-    .task-title { font-size: 13px; font-weight: 500; color: #f0f6fc; line-height: 1.3; }
-    .task-meta { margin-top: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .task-type {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 3px;
-      background: #388bfd20;
-      color: #58a6ff;
-    }
-    .task-assignee {
-      font-size: 11px;
-      color: #7ee787;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .assignee-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: #7ee787;
-      animation: pulse 2s infinite;
-    }
-    
-    /* Sidebar */
-    .sidebar { display: flex; flex-direction: column; gap: 15px; }
-    
-    .panel {
-      background: #161b22;
-      border-radius: 8px;
-      padding: 12px;
-    }
-    
-    .panel-title {
-      font-size: 11px;
-      font-weight: 600;
-      color: #8b949e;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 10px;
-    }
-    
-    /* Workers */
-    .worker-card {
-      background: #21262d;
-      border: 1px solid #30363d;
-      border-radius: 6px;
-      padding: 10px;
-      margin-bottom: 8px;
-    }
-    
-    .worker-name { font-size: 13px; font-weight: 500; color: #f0f6fc; margin-bottom: 3px; }
-    .worker-task { font-size: 11px; color: #8b949e; margin-bottom: 4px; }
-    .worker-status {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 10px;
-      color: #7ee787;
-    }
-    .status-dot { width: 5px; height: 5px; border-radius: 50%; background: #7ee787; animation: pulse 2s infinite; }
-    .status-dot.testing { background: #ffa657; }
-    
-    /* Activity Log */
-    .logs-container { max-height: 300px; overflow-y: auto; }
-    
-    .log-entry {
-      display: flex;
-      gap: 8px;
-      padding: 6px 0;
-      border-bottom: 1px solid #21262d;
-      font-size: 12px;
-      align-items: flex-start;
-    }
-    
-    .log-entry:last-child { border-bottom: none; }
-    .log-time { color: #6e7681; font-family: monospace; font-size: 10px; white-space: nowrap; min-width: 45px; }
-    .log-icon { font-size: 12px; }
-    .log-message { color: #c9d1d9; flex: 1; line-height: 1.3; }
-    
-    .no-items { color: #484f58; font-size: 12px; text-align: center; padding: 20px 10px; }
-    
-    /* Phase Summary (for completed phases) */
-    .phase-summary {
-      background: #161b22;
-      border-radius: 8px;
-      padding: 30px;
-      text-align: center;
-    }
-    
-    .summary-icon { font-size: 48px; margin-bottom: 15px; }
-    .summary-title { font-size: 20px; font-weight: 600; color: #f0f6fc; margin-bottom: 8px; }
-    .summary-subtitle { font-size: 14px; color: #7ee787; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orchestrator Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --text-dim: #8b949e; --text-bright: #f0f6fc;
+    --blue: #58a6ff; --green: #3fb950; --yellow: #d29922;
+    --red: #f85149; --purple: #bc8cff; --cyan: #39d353;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  
+  /* Header */
+  .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--border); }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .header h1 span { color: var(--blue); }
+  .header .meta { color: var(--text-dim); font-size: 13px; }
+  
+  /* Stats bar */
+  .stats { display: flex; gap: 16px; padding: 16px 24px; border-bottom: 1px solid var(--border); }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; min-width: 100px; }
+  .stat .num { font-size: 24px; font-weight: 700; }
+  .stat .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .stat.done .num { color: var(--green); }
+  .stat.progress .num { color: var(--blue); }
+  .stat.testing .num { color: var(--yellow); }
+  .stat.failed .num { color: var(--red); }
+  
+  /* Layout */
+  .layout { display: flex; height: calc(100vh - 130px); }
+  .main { flex: 1; overflow-y: auto; padding: 20px 24px; }
+  .sidebar { width: 320px; border-left: 1px solid var(--border); overflow-y: auto; }
+  
+  /* Milestones */
+  .milestone { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
+  .milestone-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; }
+  .milestone-header:hover { background: rgba(88,166,255,0.05); }
+  .milestone-name { font-weight: 600; font-size: 14px; }
+  .milestone-progress { display: flex; align-items: center; gap: 8px; }
+  .milestone-bar { width: 120px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .milestone-bar-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.3s; }
+  .milestone-count { font-size: 12px; color: var(--text-dim); }
+  .milestone-tasks { padding: 0 16px 12px; display: none; }
+  .milestone.open .milestone-tasks { display: block; }
+  
+  /* Task cards */
+  .task { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; margin-top: 6px; font-size: 13px; }
+  .task-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .task-status.todo { background: var(--text-dim); }
+  .task-status.in_progress { background: var(--blue); }
+  .task-status.testing { background: var(--yellow); }
+  .task-status.done { background: var(--green); }
+  .task-status.failed { background: var(--red); }
+  .task-status.blocked { background: var(--purple); }
+  .task-id { color: var(--text-dim); font-family: monospace; font-size: 11px; flex-shrink: 0; }
+  .task-title { flex: 1; }
+  .task-type { font-size: 10px; padding: 2px 6px; border-radius: 3px; background: var(--border); color: var(--text-dim); flex-shrink: 0; }
+  .task-assignee { font-size: 11px; color: var(--cyan); flex-shrink: 0; }
+  
+  /* Kanban */
+  .kanban { display: none; }
+  .kanban.active { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+  .kanban-col { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; min-height: 200px; }
+  .kanban-col h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .kanban-col h3 .count { color: var(--text); }
+  
+  /* Sidebar sections */
+  .sidebar-section { padding: 16px; border-bottom: 1px solid var(--border); }
+  .sidebar-section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 10px; }
+  .worker { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
+  .worker-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .worker-name { flex: 1; }
+  .worker-task { color: var(--text-dim); font-family: monospace; font-size: 11px; }
+  
+  /* Activity log */
+  .activity-item { padding: 6px 0; font-size: 12px; border-bottom: 1px solid rgba(48,54,61,0.5); }
+  .activity-time { color: var(--text-dim); }
+  .activity-icon { margin-right: 4px; }
+  
+  /* View toggle */
+  .view-toggle { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 3px; }
+  .view-toggle button { background: none; border: none; color: var(--text-dim); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+  .view-toggle button.active { background: var(--border); color: var(--text); }
+  
+  /* Progress feed */
+  .progress-entry { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; font-size: 12px; font-family: monospace; white-space: pre-wrap; line-height: 1.5; }
+  .progress-entry .ts { color: var(--blue); }
+  .progress-entry .pass { color: var(--green); }
+  .progress-entry .fail { color: var(--red); }
+  
+  /* Phases bar */
+  .phases { display: flex; gap: 4px; padding: 0 24px 0; }
+  .phase-chip { font-size: 11px; padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); color: var(--text-dim); }
+  .phase-chip.complete { border-color: var(--green); color: var(--green); }
+  .phase-chip.active { border-color: var(--blue); color: var(--blue); background: rgba(88,166,255,0.1); }
+  
+  .empty { color: var(--text-dim); font-style: italic; font-size: 13px; padding: 20px; text-align: center; }
+</style>
 </head>
 <body>
-  <div class="header">
-    <div class="project-name" id="projectName">Loading...</div>
-    <div class="stats-row" id="statsRow"></div>
+
+<div class="header">
+  <h1>🎯 <span id="projectName">Loading...</span></h1>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="view-toggle">
+      <button class="active" onclick="setView('milestones')">Milestones</button>
+      <button onclick="setView('kanban')">Kanban</button>
+      <button onclick="setView('progress')">Progress Log</button>
+    </div>
+    <div class="meta" id="lastUpdated"></div>
   </div>
-  
-  <div class="phase-tabs-container">
-    <div class="sprint-timeline" id="sprintTimeline"></div>
-    <div class="phase-tabs" id="phaseTabs"></div>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div id="phases" class="phases" style="padding-top:12px;padding-bottom:12px;"></div>
+
+<div class="layout">
+  <div class="main">
+    <div id="milestones-view"></div>
+    <div id="kanban-view" class="kanban"></div>
+    <div id="progress-view" style="display:none"></div>
   </div>
-  
-  <div class="main-layout">
-    <div class="board-container" id="boardContainer"></div>
-    <div class="sidebar">
-      <div class="panel">
-        <div class="panel-title">Active Workers</div>
-        <div id="workersContainer"><div class="no-items">No active workers</div></div>
-      </div>
-      <div class="panel">
-        <div class="panel-title">Activity Log</div>
-        <div class="logs-container" id="logsContainer"><div class="no-items">No activity</div></div>
-      </div>
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>Active Workers</h3>
+      <div id="workers"><div class="empty">No active workers</div></div>
+    </div>
+    <div class="sidebar-section" style="flex:1;">
+      <h3>Activity</h3>
+      <div id="activity"><div class="empty">No activity yet</div></div>
     </div>
   </div>
+</div>
 
-  <script>
-    let state = null;
-    let selectedPhase = null;
-    
-    async function loadState() {
-      try {
-        const resp = await fetch('state.json?' + Date.now());
-        state = await resp.json();
-        render();
-      } catch (e) { console.error('Load failed:', e); }
-    }
-    
-    function render() {
-      if (!state) return;
-      document.getElementById('projectName').textContent = state.project || 'Untitled';
-      renderSprintRoadmap();
-      renderStats();
-      renderPhaseTabs();
-      renderBoard();
-      renderWorkers();
-      renderLogs();
-    }
-    
-    function renderSprintRoadmap() {
-      const phases = state.phases || [];
-      const tasks = state.tasks || [];
-      const sprints = state.sprints || [
-        { name: 'MVP', phases: ['Contracts', 'Backend', 'Frontend'] },
-        { name: 'Refinement', phases: ['Integration'] },
-        { name: 'Production', phases: ['Launch'] }
-      ];
-      const container = document.getElementById('sprintTimeline');
-      
-      let html = '';
-      
-      sprints.forEach((sprint, idx) => {
-        // Calculate sprint progress
-        const sprintTasks = tasks.filter(t => sprint.phases.includes(t.phase));
-        const done = sprintTasks.filter(t => t.status === 'done').length;
-        const total = sprintTasks.length || 1;
-        const progress = Math.round((done / total) * 100);
-        
-        // Checkpoint status based on completion only
-        let checkpointStatus = 'pending';
-        if (progress === 100) {
-          checkpointStatus = 'complete';
-        } else if (done > 0) {
-          checkpointStatus = 'active';
-        }
-        
-        // Start checkpoint (only for first sprint) - just a marker
-        if (idx === 0) {
-          html += '<div class=\"sprint-checkpoint pending\"></div>';
-        }
-        
-        // Segment - always grey background, progress bar fills with green
-        html += '<div class=\"sprint-segment\" style=\"flex: ' + sprint.phases.length + ';\">';
-        html += '<div class=\"sprint-segment-progress\" style=\"width: ' + progress + '%;\"></div>';
-        html += '</div>';
-        
-        // End checkpoint with label - shows status based on completion
-        html += '<div class=\"sprint-checkpoint ' + checkpointStatus + '\">';
-        html += '<div class=\"sprint-checkpoint-label\">' + sprint.name + '</div>';
-        html += '</div>';
-      });
-      
-      container.innerHTML = html;
-    }
-    
-    function renderStats() {
-      const tasks = state.tasks || [];
-      const current = state.currentPhase;
-      const phaseTasks = tasks.filter(t => t.phase === current);
-      const done = phaseTasks.filter(t => t.status === 'done').length;
-      const inProgress = phaseTasks.filter(t => t.status === 'in_progress' || t.status === 'testing').length;
-      
-      document.getElementById('statsRow').innerHTML = `
-        <div class="stat-card">
-          <div class="stat-value">${done}/${phaseTasks.length}</div>
-          <div class="stat-label">Phase Tasks</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value ${inProgress ? 'pending' : ''}">${inProgress}</div>
-          <div class="stat-label">In Progress</div>
-        </div>
-      `;
-    }
-    
-    function renderPhaseTabs() {
-      const container = document.getElementById('phaseTabs');
-      const phases = state.phases || [];
-      if (!selectedPhase) selectedPhase = state.currentPhase || phases[0]?.name;
-      
-      const tasks = state.tasks || [];
-      
-      container.innerHTML = phases.map(p => {
-        const phaseTasks = tasks.filter(t => t.phase === p.name);
-        const done = phaseTasks.filter(t => t.status === 'done').length;
-        const countBadge = phaseTasks.length ? `<span class="phase-task-count">${done}/${phaseTasks.length}</span>` : '';
-        
-        return `
-          <div class="phase-tab ${p.status} ${p.name === selectedPhase ? 'selected' : ''}" 
-               onclick="selectPhase('${p.name}')">
-            <div class="phase-dot"></div>
-            <span>${p.name}</span>
-            ${countBadge}
-          </div>
-        `;
-      }).join('');
-    }
-    
-    function selectPhase(name) { selectedPhase = name; render(); }
-    
-    function renderBoard() {
-      const container = document.getElementById('boardContainer');
-      const phase = state.phases?.find(p => p.name === selectedPhase);
-      
-      if (phase?.status === 'complete') {
-        const tasks = (state.tasks || []).filter(t => t.phase === selectedPhase);
-        container.innerHTML = `
-          <div class="phase-summary">
-            <div class="summary-icon">✅</div>
-            <div class="summary-title">${selectedPhase} Complete</div>
-            <div class="summary-subtitle">${tasks.length} tasks finished</div>
-          </div>
-        `;
-        return;
-      }
-      
-      const tasks = (state.tasks || []).filter(t => t.phase === selectedPhase);
-      const cols = {
-        todo: tasks.filter(t => t.status === 'todo'),
-        in_progress: tasks.filter(t => t.status === 'in_progress'),
-        testing: tasks.filter(t => t.status === 'testing'),
-        done: tasks.filter(t => t.status === 'done')
-      };
-      
-      container.innerHTML = `<div class="board">
-        ${renderColumn('todo', 'Todo', cols.todo)}
-        ${renderColumn('in_progress', 'In Progress', cols.in_progress)}
-        ${renderColumn('testing', 'Testing', cols.testing)}
-        ${renderColumn('done', 'Done', cols.done)}
-      </div>`;
-    }
-    
-    function renderColumn(id, title, tasks) {
-      return `<div class="column ${id}">
-        <div class="column-header">
-          <span class="column-title">${title}</span>
-          <span class="column-count">${tasks.length}</span>
-        </div>
-        ${tasks.map(renderTask).join('') || ''}
-      </div>`;
-    }
-    
-    function renderTask(t) {
-      return `<div class="task-card">
-        <div class="task-id">${t.id}</div>
-        <div class="task-title">${t.title}</div>
-        <div class="task-meta">
-          ${t.type ? `<span class="task-type">${t.type}</span>` : ''}
-          ${t.assignee ? `<span class="task-assignee"><span class="assignee-dot"></span>${t.assignee}</span>` : ''}
-        </div>
-      </div>`;
-    }
-    
-    function renderWorkers() {
-      const container = document.getElementById('workersContainer');
-      const workers = (state.workers || []).filter(w => w.status === 'active' || w.status === 'testing');
-      
-      if (!workers.length) { container.innerHTML = '<div class="no-items">No active workers</div>'; return; }
-      
-      container.innerHTML = workers.map(w => `
-        <div class="worker-card">
-          <div class="worker-name">${w.name}</div>
-          <div class="worker-task">${w.task}</div>
-          <div class="worker-status">
-            <span class="status-dot ${w.status}"></span>
-            ${w.status}
+<script>
+let state = null;
+let currentView = 'milestones';
+let collapsedMilestones = new Set(); // track which milestones user has collapsed
+let expandedMilestones = new Set(); // track which milestones user has expanded
+
+function statusClass(s) {
+  const map = { '⬜': 'todo', 'todo': 'todo', '🔄': 'in_progress', 'in_progress': 'in_progress', 
+    '🧪': 'testing', 'testing': 'testing', '✅': 'done', 'done': 'done', 
+    '❌': 'failed', 'failed': 'failed', '🚫': 'blocked', 'blocked': 'blocked' };
+  return map[s] || 'todo';
+}
+
+function toggleMilestone(el, name) {
+  const milestone = el.parentElement;
+  milestone.classList.toggle('open');
+  if (milestone.classList.contains('open')) {
+    expandedMilestones.add(name);
+  } else {
+    expandedMilestones.delete(name);
+  }
+}
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('milestones-view').style.display = v === 'milestones' ? '' : 'none';
+  document.getElementById('kanban-view').className = v === 'kanban' ? 'kanban active' : 'kanban';
+  document.getElementById('progress-view').style.display = v === 'progress' ? '' : 'none';
+}
+
+function render() {
+  if (!state) return;
+  
+  document.getElementById('projectName').textContent = state.project || 'Project';
+  document.getElementById('lastUpdated').textContent = state.lastUpdated ? 'Updated ' + new Date(state.lastUpdated).toLocaleTimeString() : '';
+  
+  // Stats
+  const p = state.progress || {};
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="num">${p.total||0}</div><div class="label">Total</div></div>
+    <div class="stat done"><div class="num">${p.done||0}</div><div class="label">Done</div></div>
+    <div class="stat progress"><div class="num">${p.inProgress||0}</div><div class="label">In Progress</div></div>
+    <div class="stat testing"><div class="num">${p.testing||0}</div><div class="label">Testing</div></div>
+    <div class="stat failed"><div class="num">${p.failed||0}</div><div class="label">Failed</div></div>
+  `;
+  
+  // Phases
+  const ph = (state.phases||[]).map(p => 
+    `<div class="phase-chip ${p.status}">${p.name} ${p.done||0}/${p.tasks||0}</div>`
+  ).join('');
+  document.getElementById('phases').innerHTML = ph;
+  
+  // Milestones view
+  const tasks = state.tasks || [];
+  const ml = (state.milestones||[]).map(m => {
+    const mTasks = tasks.filter(t => m.tasks.includes(t.id));
+    const done = mTasks.filter(t => statusClass(t.status) === 'done').length;
+    const pct = mTasks.length ? (done / mTasks.length * 100) : 0;
+    const taskHtml = mTasks.map(t => `
+      <div class="task">
+        <div class="task-status ${statusClass(t.status)}"></div>
+        <span class="task-id">${t.id}</span>
+        <span class="task-title">${t.title}</span>
+        <span class="task-type">${t.type||''}</span>
+        ${t.assignee ? `<span class="task-assignee">${t.assignee}</span>` : ''}
+      </div>
+    `).join('');
+    return `
+      <div class="milestone ${expandedMilestones.has(m.name) ? 'open' : ''}">
+        <div class="milestone-header" onclick="toggleMilestone(this, '${m.name.replace(/'/g, "\\'")}')">
+          <span class="milestone-name">${m.name}</span>
+          <div class="milestone-progress">
+            <div class="milestone-bar"><div class="milestone-bar-fill" style="width:${pct}%"></div></div>
+            <span class="milestone-count">${done}/${mTasks.length}</span>
           </div>
         </div>
-      `).join('');
-    }
-    
-    function renderLogs() {
-      const container = document.getElementById('logsContainer');
-      const activity = state.activity || [];
-      
-      if (!activity.length) { container.innerHTML = '<div class="no-items">No activity</div>'; return; }
-      
-      const icons = {spawn:'🚀', complete:'✅', fail:'❌', audit:'🔍', phase:'📦', start:'▶️'};
-      
-      container.innerHTML = activity.slice(-20).reverse().map(a => {
-        const time = new Date(a.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        return `<div class="log-entry">
-          <span class="log-time">${time}</span>
-          <span class="log-icon">${icons[a.type] || '📝'}</span>
-          <span class="log-message">${a.message}</span>
-        </div>`;
-      }).join('');
-    }
-    
-    loadState();
-    setInterval(loadState, 3000);
-  </script>
+        <div class="milestone-tasks">${taskHtml}</div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('milestones-view').innerHTML = ml || '<div class="empty">No milestones defined</div>';
+  
+  // Kanban view
+  const cols = ['todo', 'in_progress', 'testing', 'done'];
+  const colNames = { todo: 'To Do', in_progress: 'In Progress', testing: 'Testing', done: 'Done' };
+  document.getElementById('kanban-view').innerHTML = cols.map(col => {
+    const colTasks = tasks.filter(t => statusClass(t.status) === col);
+    return `
+      <div class="kanban-col">
+        <h3>${colNames[col]} <span class="count">(${colTasks.length})</span></h3>
+        ${colTasks.map(t => `
+          <div class="task" style="flex-direction:column;align-items:flex-start;gap:4px;">
+            <div style="display:flex;gap:6px;width:100%">
+              <span class="task-id">${t.id}</span>
+              <span class="task-type">${t.type||''}</span>
+            </div>
+            <span class="task-title">${t.title}</span>
+            ${t.assignee ? `<span class="task-assignee">${t.assignee}</span>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }).join('');
+  
+  // Workers
+  const workers = (state.workers||[]).filter(w => w.status === 'active');
+  document.getElementById('workers').innerHTML = workers.length ? workers.map(w => `
+    <div class="worker">
+      <div class="worker-dot"></div>
+      <span class="worker-name">${w.name}</span>
+      <span class="worker-task">${w.task||''}</span>
+    </div>
+  `).join('') : '<div class="empty">No active workers</div>';
+  
+  // Activity
+  const acts = (state.activity||[]).slice(0, 25);
+  const icons = { spawn: '🚀', complete: '✅', fail: '❌', audit: '🔍', phase: '📦', start: '▶️', verify: '🔍' };
+  document.getElementById('activity').innerHTML = acts.length ? acts.map(a => `
+    <div class="activity-item">
+      <span class="activity-icon">${icons[a.type]||'•'}</span>
+      ${a.message}
+      <span class="activity-time">${a.time ? new Date(a.time).toLocaleTimeString() : ''}</span>
+    </div>
+  `).join('') : '<div class="empty">No activity yet</div>';
+}
+
+async function poll() {
+  try {
+    const r = await fetch('state.json?' + Date.now());
+    if (r.ok) { state = await r.json(); render(); }
+  } catch(e) {}
+}
+
+poll();
+setInterval(poll, 3000);
+</script>
 </body>
 </html>

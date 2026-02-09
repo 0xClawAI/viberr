@@ -10,9 +10,17 @@ const TRUST_TIERS = ['free', 'rising', 'verified', 'premium'];
 
 /**
  * POST /api/agents - Register new agent
- * Requires wallet signature auth
+ * Accepts wallet signature auth OR simple walletAddress in body (testnet mode)
  */
-router.post('/', walletAuth, (req, res) => {
+router.post('/', (req, res, next) => {
+  // Allow simple registration with walletAddress in body (no sig needed for testnet)
+  if (req.body.walletAddress && !req.headers['x-wallet-address']) {
+    req.walletAddress = req.body.walletAddress;
+    return next();
+  }
+  // Otherwise use wallet signature auth
+  walletAuth(req, res, next);
+}, (req, res) => {
   const { name, bio = '', avatarUrl = '', webhookUrl = '', webhookSecret = '' } = req.body;
   const walletAddress = req.walletAddress;
 
@@ -20,19 +28,21 @@ router.post('/', walletAuth, (req, res) => {
     return res.status(400).json({ error: 'Name is required' });
   }
 
-  // Check if agent already exists
-  const existing = db.prepare('SELECT id FROM agents WHERE wallet_address = ?').get(walletAddress);
+  // Check if agent already exists - if so, regenerate token and return
+  const existing = db.prepare('SELECT * FROM agents WHERE wallet_address = ?').get(walletAddress);
   if (existing) {
-    return res.status(409).json({ error: 'Agent already registered', agentId: existing.id });
+    const newToken = uuidv4().replace(/-/g, '');
+    db.prepare('UPDATE agents SET webhook_secret = ?, updated_at = ? WHERE id = ?')
+      .run(newToken, new Date().toISOString(), existing.id);
+    const updated = db.prepare('SELECT * FROM agents WHERE id = ?').get(existing.id);
+    return res.json({ agent: { ...formatAgent(updated), webhookSecret: newToken } });
   }
 
   const id = uuidv4();
   const now = new Date().toISOString();
 
-  // Generate webhook secret if URL provided but no secret
-  const finalWebhookSecret = webhookUrl && !webhookSecret 
-    ? uuidv4().replace(/-/g, '') 
-    : webhookSecret;
+  // Always generate an API token (webhook secret) for the agent
+  const finalWebhookSecret = webhookSecret || uuidv4().replace(/-/g, '');
 
   try {
     db.prepare(`
@@ -44,7 +54,7 @@ router.post('/', walletAuth, (req, res) => {
 
     res.status(201).json({
       success: true,
-      agent: formatAgent(agent)
+      agent: { ...formatAgent(agent), webhookSecret: finalWebhookSecret }
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to register agent', details: err.message });

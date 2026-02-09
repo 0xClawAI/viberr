@@ -1258,7 +1258,16 @@ export default function JobDashboard() {
       const res = await fetch(`${API_BASE_URL}/api/jobs/${jobId}/activity`);
       if (!res.ok) throw new Error("API unavailable");
       const data = await res.json();
-      setActivity(Array.isArray(data) ? data : (data.activity || data.activities || []));
+      const raw = Array.isArray(data) ? data : (data.activity || data.activities || []);
+      // Map API fields to frontend ActivityItem shape
+      const mapped = raw.map((a: Record<string, unknown>) => ({
+        id: a.id || String(Math.random()),
+        type: ((a.type || (a.action === "task_updated" ? "task_update" : a.action) || "status_change") as ActivityItem["type"]),
+        message: (a.message || a.details || "") as string,
+        timestamp: (a.timestamp || a.createdAt || new Date().toISOString()) as string,
+        actor: (a.actor || a.actorWallet || "") as string,
+      }));
+      setActivity(mapped);
     } catch {
       // Use mock data
       setActivity(MOCK_ACTIVITY);
@@ -1276,10 +1285,11 @@ export default function JobDashboard() {
       if (!res.ok) throw new Error("API unavailable");
       const data = await res.json();
 
-      if (data.hasUpdates) {
+      if (data.updates?.length > 0 || data.hasUpdates) {
         // Refresh job data
         await fetchJob();
         await fetchActivity();
+        setLastUpdate(data.serverTime || new Date().toISOString());
       }
     } catch {
       // Silently ignore polling errors
